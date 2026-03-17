@@ -17,35 +17,6 @@ const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randDigits = (n) => Array.from({ length: n }, () => randInt(0, 9)).join("");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function generatePassword() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
-function buildProfile() {
-  const firstName = rand(FIRST_NAMES);
-  const lastName  = rand(LAST_NAMES);
-  const username  = `${firstName.toLowerCase()}${lastName.toLowerCase()}${randInt(10, 99)}`;
-  const email     = `${username}@${rand(DOMAINS)}`;
-  const password  = generatePassword();
-  const phone     = `+1${randDigits(3)}${randDigits(3)}${randDigits(4)}`;
-  const zip       = randDigits(5);
-  const street    = `${randInt(1, 9999)} ${rand(STREETS)}`;
-  const city      = rand(CITIES);
-  const state     = rand(STATES);
-  const company   = rand(COMPANIES);
-  const birthYear = randInt(1970, 2000);
-  const birthMonth= String(randInt(1, 12)).padStart(2, "0");
-  const birthDay  = String(randInt(1, 28)).padStart(2, "0");
-
-  return {
-    firstName, lastName, username, email, password,
-    phone, zip, street, city, state, company,
-    dob: `${birthYear}-${birthMonth}-${birthDay}`,
-    dobFormatted: `${birthMonth}/${birthDay}/${birthYear}`,
-  };
-}
-
 // ── Template helpers ───────────────────────────
 
 function formatTimestamp(now) {
@@ -479,37 +450,11 @@ async function fillCustomSelectors(rules, customValues) {
 
 // ── Main fill logic ───────────────────────────
 
-async function fillForm(overrides = {}) {
-  const profile  = { ...buildProfile(), ...overrides };
-  const fields   = document.querySelectorAll("[data-automation-id]");
-  let filled = 0, skipped = 0;
-  const log = [];
-
-  for (const el of fields) {
-    await delay(20);
-    const automationId = el.getAttribute("data-automation-id");
-    const value = matchAutomationId(automationId, profile);
-    if (value) {
-      const ok = fillField(el, value);
-      if (ok) {
-        filled++;
-        el.setAttribute("data-autofill-status", "filled");
-        log.push({ id: automationId, value, status: "filled" });
-      } else {
-        skipped++;
-        log.push({ id: automationId, value, status: "skipped (unsupported element)" });
-      }
-    } else {
-      skipped++;
-      log.push({ id: automationId, value: null, status: "skipped (no match)" });
-    }
-  }
-
-  console.groupCollapsed(`[AutoForm] Filled ${filled} / ${filled + skipped} fields`);
-  console.table(log);
-  console.groupEnd();
-
-  return { filled, skipped, total: filled + skipped, profile };
+async function fillForm(_overrides = {}) {
+  // Legacy API kept for backward compatibility. All automatic guessing
+  // based on data-automation-id has been disabled; only custom selectors
+  // are used for filling now.
+  return { filled: 0, skipped: 0, total: 0, profile: {} };
 }
 
 // ── Injected UI button ────────────────────────
@@ -588,27 +533,25 @@ function injectButton() {
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
-    // Pull overrides, custom selectors and vars from storage if any, for this page context
-    chrome.storage.sync.get(["fixedFields", "contextConfigs"], (res) => {
+    // Pull custom selectors and vars from storage if any, for this page context
+    chrome.storage.sync.get(["contextConfigs"], (res) => {
       (async () => {
-        const overrides = res.fixedFields || {};
         const contexts = res.contextConfigs || {};
         const contextKey = window.location.href.split("#")[0];
         const ctx = contexts[contextKey] || {};
         const customSelectors = Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [];
         const customVars = Array.isArray(ctx.customVars) ? ctx.customVars : [];
         const customValues = buildCustomVarValues(customVars);
-        const resultForm = await fillForm(overrides);
         const resultCustom = await fillCustomSelectors(customSelectors, customValues);
 
-        const filled = resultForm.filled + resultCustom.filled;
-        const skipped = resultForm.skipped + resultCustom.skipped;
+        const filled = resultCustom.filled;
+        const skipped = resultCustom.skipped;
         const total = filled + skipped;
 
         // Show toast
         toast.innerHTML = filled > 0
           ? `✅ <strong>${filled}</strong> field${filled > 1 ? "s" : ""} filled<br><span style="opacity:0.6;font-size:11px">${skipped} skipped</span>`
-          : `⚠️ No matching fields found.<br><span style="opacity:0.6;font-size:11px">Check selectors and data-automation-id names</span>`;
+          : `⚠️ No matching fields found.<br><span style="opacity:0.6;font-size:11px">Check selectors and rules</span>`;
         toast.style.opacity = "1";
         toast.style.transform = "translateY(0)";
 
@@ -676,16 +619,14 @@ function escapeCssAttrValue(value) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === "fill") {
     (async () => {
-      const overrides = msg.overrides || {};
       const customSelectors = msg.customSelectors || [];
       const customVars = msg.customVars || [];
       const customValues = buildCustomVarValues(customVars);
 
-      const resultForm = await fillForm(overrides);
       const resultCustom = await fillCustomSelectors(customSelectors, customValues);
 
-      const filled = resultForm.filled + resultCustom.filled;
-      const skipped = resultForm.skipped + resultCustom.skipped;
+      const filled = resultCustom.filled;
+      const skipped = resultCustom.skipped;
       const total = filled + skipped;
 
       sendResponse({ filled, skipped, total });

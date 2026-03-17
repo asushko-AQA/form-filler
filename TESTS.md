@@ -1,14 +1,14 @@
 ## Manual Test Coverage for AutoForm Filler
 
-This document describes **manual test coverage** for the current AutoForm Filler Chrome extension. It focuses on end‑to‑end behavior in the popup, injected page UI, and form‑filling logic based on `data-automation-id` and custom selector rules.
+This document describes **manual test coverage** for the current AutoForm Filler Chrome extension. It focuses on end‑to‑end behavior in the popup, injected page UI, and form‑filling logic driven by **explicit custom selector rules** (with `data-automation-id` used only for discovery, not for guessing values).
 
 ## Popup – Fill Tab
 
 ### Feature: Fill Form from Popup
 
-Short description: Trigger a fill run for the active tab using the popup `Fill Form Now` button and show summary stats.
+Short description: Trigger a fill run for the active tab using the popup `Fill Form Now` button and show summary stats, based solely on configured custom selector rules.
 
-- [ ] With a page that has several `data-automation-id` inputs, open the popup and click **Fill Form Now**; verify that obvious fields (first name, last name, email, phone, address, etc.) are populated with plausible random values.
+- [ ] On a page where you have configured several custom selector rules (including text fields and select‑like widgets), open the popup and click **Fill Form Now**; verify that only fields covered by those rules are populated and that no unrelated fields are touched.
 - [ ] After a successful fill, verify that **Filled**, **Skipped**, and **Total** counters in the popup show non‑placeholder numeric values that roughly match the visible fields.
 - [ ] On a page with **no** matching `data-automation-id` fields, click **Fill Form Now** and verify that the stats show either `0` filled or special markers and do not crash the popup.
 - [ ] Confirm that repeated clicks on **Fill Form Now** continue to work without UI freezing, and stats update each time.
@@ -154,21 +154,20 @@ Short description: Inject a floating Auto Fill button on pages that have context
 
 ### Feature: Auto Fill Button Click Behavior
 
-Short description: Clicking the injected button runs the same fill logic and shows a toast summary.
+Short description: Clicking the injected button runs the same custom‑rule fill logic and shows a toast summary.
 
-- [ ] On a page with matching `data-automation-id` fields and configured overrides/selectors, click the floating **Auto Fill** button and verify that fields are populated with plausible data.
+- [ ] On a page where a context configuration exists (custom selectors/vars), click the floating **Auto Fill** button and verify that fields targeted by those rules are populated as expected and that other fields remain unchanged.
 - [ ] Confirm a toast appears near the button summarizing how many fields were filled and skipped (e.g. “✅ X fields filled, Y skipped”).
 - [ ] On a page with selectors but no matching elements (or unsupported elements), click the button and verify that the toast reports zero filled or a clear warning, without leaving the page in a broken state.
 - [ ] Click the button multiple times and ensure subsequent runs continue to work and update the toast, with the button re‑enabled after each run.
 
-### Feature: `data-automation-id` Keyword‑Based Filling
+### Feature: `data-automation-id` Discovery Only (no guessing)
 
-Short description: Use keyword matching on `data-automation-id` to decide which profile field to insert.
+Short description: `data-automation-id` is used to **discover** fields and build selectors, but filling itself is controlled only by custom selector rules.
 
-- [ ] On a test form where `data-automation-id` attributes contain typical patterns (`firstName`, `lastName`, `email`, `phone`, `address`, `city`, `state`, `zip`, `company`, `dob`), run a fill and verify each field receives a sensible corresponding value.
-- [ ] Confirm that `confirm password`/`repeat password` style fields receive the same generated password as the main password field.
-- [ ] Verify that fields whose `data-automation-id` does not match any known pattern remain unchanged and are recorded as skipped.
-- [ ] On a select dropdown for country, ensure that a `country`‑like automation ID results in “United States” being selected where possible (TBD if selection options differ).
+- [ ] Using the Fields tab with `data-automation-id` as the search attribute, scan a page and confirm that results help you create or update custom selector rules in the Custom tab.
+- [ ] Run a fill with **no custom rules configured**, even on a page rich in `data-automation-id` attributes, and verify that no fields are filled and the popup/toast clearly reports zero filled without errors.
+- [ ] After adding custom rules derived from those attributes, run a fill again and confirm that only fields matched by your selectors are filled; fields that merely have `data-automation-id` but no corresponding rules remain unchanged.
 
 ### Feature: Phone Country Code Select‑Like Dropdowns
 
@@ -209,11 +208,10 @@ Short description: Field fills are staggered with small delays between individua
 
 ### Feature: Logging and Diagnostics (Console)
 
-Short description: Log summary and per‑field details to the browser console for debugging.
+Short description: Log summary and per‑field details for **custom selector rules** to the browser console for debugging.
 
-- [ ] After running a fill, open the browser DevTools console and confirm a collapsed group logs a summary with counts (e.g. “Filled X / Y fields”).
-- [ ] Expand the log and verify a table of fields shows each `data-automation-id`, the value used, and whether it was filled or skipped.
-- [ ] When custom selectors are configured, confirm an additional log group/table tracks which selectors were filled or skipped.
+- [ ] After running a fill, open the browser DevTools console and confirm a collapsed group logs a summary with counts for custom selectors (e.g. “Custom selectors: filled X, skipped Y (with retry)”).
+- [ ] Expand the log and verify a table shows each selector, the value used, and whether it was filled on first pass, second pass, or skipped after retry.
 
 ### Feature: Two‑Pass Custom Selector Filling
 

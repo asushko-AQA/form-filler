@@ -1,6 +1,7 @@
 # AutoForm Filler — Chrome Extension
 
-A Chrome extension that fills web forms by hooking into `data-automation-id` attributes with semi-generated data (mix of fixed + random values).
+A Chrome extension that fills web forms **only for fields you explicitly configure**.  
+You define pairs of **CSS selector → value template**, and the extension fills just those fields under your control.
 
 ---
 
@@ -8,74 +9,95 @@ A Chrome extension that fills web forms by hooking into `data-automation-id` att
 
 1. Open Chrome and navigate to `chrome://extensions`
 2. Enable **Developer mode** (toggle in the top-right corner)
-3. Click **"Load unpacked"**
+3. Click **\"Load unpacked\"**
 4. Select the `form-filler-extension` folder
-5. The extension is now installed ✅
+5. The extension is now installed
 
 ---
 
 ## 🚀 How to Use
 
 ### Option A — Floating button on the page
-A purple **"Auto Fill"** button appears in the bottom-right corner of any page.  
-Click it to fill all `data-automation-id` fields instantly.
+If you have custom rules configured for the current page, a purple **\"Auto Fill\"** button appears in the bottom-right corner.  
+Click it to run your rules and fill matching fields.
 
 ### Option B — Extension popup
-Click the extension icon in Chrome's toolbar:
-- **Fill tab** → "Fill Form Now" button + shows filled/skipped stats
-- **Fields tab** → Scan the current page to see all detected `data-automation-id` fields (green dot = recognized, grey dot = unknown pattern)
-- **Config tab** → Set fixed values for email, name, username, password
+Click the extension icon in Chrome's toolbar. The popup has three main areas:
+- **Fill tab** → \"Fill Form Now\" button with **filled / skipped / total** stats for your custom rules.
+- **Fields tab** → Scan the current page by attribute (e.g. `data-automation-id`) to discover candidate elements and quickly create rules from them.
+- **Custom tab** → Define and manage your custom rules and variables.
+
+The extension **does not guess values automatically**. It only fills selectors and templates you define.
 
 ---
 
-## 🔧 Supported `data-automation-id` Patterns
+## 🎯 Core Concept: Selector → Value Template
 
-| Pattern keywords | Fills with |
-|---|---|
-| `firstName`, `fname`, `given-name` | Random first name |
-| `lastName`, `lname`, `surname` | Random last name |
-| `name` | Full name |
-| `email`, `e-mail` | Random email |
-| `phone`, `mobile`, `cell`, `tel` | Random US phone |
-| `username`, `login`, `handle` | Random username |
-| `password`, `passwd`, `pwd` | Random 12-char password |
-| `confirm-password`, `repeat-pass` | Same password |
-| `address`, `street`, `addr` | Random street address |
-| `city` | Random US city |
-| `state`, `province`, `region` | Random US state code |
-| `zip`, `postal`, `postcode` | Random 5-digit ZIP |
-| `country` | United States |
-| `company`, `organization`, `org` | Random company name |
-| `birthdate`, `dob`, `date-of-birth` | Random DOB (YYYY-MM-DD) |
+Each rule has:
+- **Selector** – a CSS selector that targets one or more fields on the page  
+  (for example: `[data-automation-id=\"email\"] input`, `input[name=\"phone\"]`, `#user-login`).
+- **Value template** – the value to type or select, which can use variables.
+- **Mode** – either:
+  - `type` – type the value into an `<input>` / `<textarea>` / similar field.
+  - `select` – choose an option from a select-like widget (including custom dropdowns).
 
-Pattern matching is **case-insensitive** and uses **substring matching** — so `workEmail`, `user-email`, `emailAddress` all resolve correctly.
+When you press **Fill**, the content script:
+1. Builds values for your variables.
+2. Applies each rule in order.
+3. For `select` mode, it tries to pick the best matching option text (e.g. for `\"+1\"` on a phone country dropdown).
+
+If a field cannot be filled (unsupported element, no matching option, etc.), it is counted as **skipped** and reported in the stats/log.
 
 ---
 
-## ⚙️ Fixed vs Random Fields
+## 🧩 Custom Variables
 
-In the **Config tab**, you can pin specific values that will always be used instead of random ones:
-- Email → always use your test email
-- Name → always use the same name
-- Password → always use your test password
+You can define reusable variables on the **Custom** tab and reference them in value templates using `{{variableName}}` syntax.
 
-Any field left blank in Config will continue to be randomly generated each run.
+Built‑in variable types include:
+- `randomFirstName` – random first name
+- `randomLastName` – random last name
+- `timestamp` – timestamp like `YYYYMMDDHHMMSS`
 
----
+You can also create **manual** variables with fixed values (e.g. test email, company name).  
+Example template:
 
-## 🔌 Adding Custom Field Mappings
-
-To add support for a new `data-automation-id` pattern, edit `content.js` and find the `matchAutomationId()` function. Add a new condition:
-
-```js
-if (/your-pattern/.test(s)) return profile.someField;
+```text
+{{randomFirstName}} {{randomLastName}} ({{timestamp}})
 ```
+
+Variables are expanded before filling, so each run can produce unique but structured data.
+
+---
+
+## 🔍 Discovering Fields (Fields Tab)
+
+The **Fields** tab helps you find elements worth targeting:
+
+- Choose an attribute (by default `data-automation-id`) and optional filter text.
+- Click **Scan** to list matching elements on the current page.
+- Click an item to create a new custom rule pre-populated with a selector for that element.
+
+This scan is purely for **discovery and rule creation**.  
+The extension no longer tries to infer or auto-map values based on attribute names.
+
+---
+
+## ⚙️ Behavior and Limitations
+
+- The extension **never fills anything you have not configured** via custom rules.
+- There is **no automatic guessing** from `data-automation-id`, `name`, labels, or other patterns.
+- Complex select-like widgets (React Select, ARIA listboxes, phone country dropdowns, etc.) are supported via `select` mode, which chooses the best matching option text/value for your desired value.
+- Filling runs twice for custom rules:
+  - First pass attempts all matches.
+  - Second pass retries still-empty fields that are still present in the DOM.
+  - Persistent failures are logged to the DevTools console with selectors and reasons.
 
 ---
 
 ## 🛠 Technical Notes
 
-- Works with **React, Angular, Vue** — uses native input value setters to trigger synthetic events
-- Handles `<input>`, `<textarea>`, and `<select>` elements
-- Re-injects the floating button on SPA navigation (MutationObserver)
-- Fixed values are persisted via `chrome.storage.sync`
+- Works with **React, Angular, Vue** — uses native input value setters to trigger synthetic events.
+- Handles `<input>`, `<textarea>`, `<select>`, and many select-like widgets (via ARIA roles and common CSS classes).
+- Re-injects the floating button on SPA navigation (MutationObserver).
+- All configuration (rules and variables) is persisted via `chrome.storage.sync`.

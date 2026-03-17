@@ -30,6 +30,21 @@ async function sendToContent(msg) {
   );
 }
 
+// Set version badge from manifest version
+(function updateVersionBadge() {
+  try {
+    const manifest = chrome.runtime && chrome.runtime.getManifest
+      ? chrome.runtime.getManifest()
+      : null;
+    const badge = document.querySelector(".badge");
+    if (badge && manifest && manifest.version) {
+      badge.textContent = `v${manifest.version}`;
+    }
+  } catch (_e) {
+    // Ignore; badge will just keep its static text.
+  }
+})();
+
 let lastFocusedTemplateInput = null;
 let customVarsCache = [];
 let varSuggestBox = null;
@@ -900,12 +915,11 @@ document.getElementById("popup-fill-btn").addEventListener("click", async () => 
   btn.disabled = true;
   btn.textContent = "Filling…";
 
-  const stored = await new Promise(res => chrome.storage.sync.get(["fixedFields", "customSelectors", "customVars"], res));
-  const overrides = stored.fixedFields || {};
+  const stored = await new Promise(res => chrome.storage.sync.get(["customSelectors", "customVars"], res));
   const customSelectors = stored.customSelectors || [];
   const customVars = stored.customVars || [];
 
-  const result = await sendToContent({ action: "fill", overrides, customSelectors, customVars });
+  const result = await sendToContent({ action: "fill", customSelectors, customVars });
 
   if (result) {
     document.getElementById("stat-filled").textContent  = result.filled;
