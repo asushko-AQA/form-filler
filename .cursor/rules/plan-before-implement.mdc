@@ -1,0 +1,11 @@
+---
+description: For non-trivial work, plan first then implement or delegate to subagents
+alwaysApply: true
+---
+
+# Plan before implementing
+
+For non-trivial or multi-step tasks (new features, refactors, multi-file changes):
+1. **Plan first**: Use the planner subagent (e.g. "Use the planner subagent to...") to produce a clear step-by-step plan and optional todo list.
+2. **Then implement**: Follow the plan. For JavaScript/extension logic use the js-developer subagent; for HTML/CSS/layout use the markup-developer subagent when appropriate.
+3. **Keep context updated**: After completing a significant feature or architectural change, suggest concrete updates to AGENTS.md or relevant .cursor/rules/ so project context stays in sync.

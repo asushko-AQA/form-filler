@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AutoForm Filler</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #232340;
+      --border: #2e2e50;
+      --accent: #6c63ff;
+      --accent2: #48bfe3;
+      --text: #e8e8f0;
+      --muted: #7a7a9a;
+      --success: #4ade80;
+      --warning: #facc15;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      width: 340px;
+      min-height: 200px;
+      max-height: 600px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo svg { width: 16px; height: 16px; }
+    .title { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .subtitle { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .badge {
+      font-size: 9px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; padding: 2px 7px;
+      border-radius: 99px; letter-spacing: 0.5px;
+    }
+
+    /* Tabs */
+    .tabs {
+      position: sticky;
+      top: 64px;
+      z-index: 19;
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tab {
+      flex: 1; padding: 10px;
+      text-align: center; font-size: 12px; font-weight: 500;
+      cursor: pointer; color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab.active { color: var(--accent); border-color: var(--accent); }
+
+    /* Content */
+    .panel { display: none; padding: 16px 18px; }
+    .panel.active { display: block; }
+
+    /* Fill button */
+    .fill-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none;
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity 0.15s, transform 0.15s;
+      letter-spacing: 0.2px;
+      margin-bottom: 14px;
+    }
+    .fill-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .fill-btn:active { transform: translateY(0); }
+    .fill-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Stats */
+    .stats {
+      display: flex; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .stat {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px; text-align: center;
+    }
+    .stat-num { font-size: 22px; font-weight: 700; line-height: 1; }
+    .stat-num.green { color: var(--success); }
+    .stat-num.yellow { color: var(--warning); }
+    .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    /* Field list */
+    .section-title {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .section-title.expandable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-toggle-indicator {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .scan-btn {
+      width: 100%; padding: 9px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text); font-size: 12px; font-weight: 500;
+      cursor: pointer; margin-bottom: 12px;
+      transition: background 0.15s;
+    }
+    .scan-btn:hover { background: var(--border); }
+
+    .field-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 14px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .field-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .field-item:last-child { border-bottom: none; }
+    .field-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+    .field-dot.unknown { background: var(--muted); }
+    .field-id { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .field-tag { font-size: 10px; color: var(--muted); background: var(--surface2); padding: 2px 6px; border-radius: 4px; }
+    .empty-state { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    /* Config inputs */
+    .config-group { margin-bottom: 14px; }
+    .custom-rule-inactive .custom-selector {
+      opacity: 0.7;
+      background: var(--surface);
+      border-color: var(--border);
+      cursor: default;
+    }
+    .custom-rule-inactive .selector-mode-btn {
+      display: none !important;
+    }
+    .custom-rule .custom-value {
+      transition: max-height 0.18s ease, opacity 0.18s ease, margin-top 0.18s ease;
+    }
+    .custom-rule-inactive .custom-value {
+      max-height: 0;
+      margin-top: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+    .custom-rule-active .custom-value {
+      max-height: 60px;
+      opacity: 1;
+    }
+    body.reorder-mode .options-handle {
+      cursor: grab;
+    }
+    .custom-rule.dragging {
+      opacity: 0.85;
+    }
+    .custom-rule.drop-before {
+      box-shadow: 0 -2px 0 var(--accent) inset;
+    }
+    .config-label {
+      font-size: 11px; font-weight: 500;
+      color: var(--muted); margin-bottom: 5px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .config-label .pin {
+      font-size: 9px; background: var(--accent);
+      color: #fff; padding: 1px 5px; border-radius: 4px; font-weight: 600;
+    }
+    .config-input {
+      width: 100%; padding: 9px 11px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text); font-size: 13px;
+      outline: none; transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    .config-input:focus { border-color: var(--accent); }
+    .config-input::placeholder { color: var(--muted); }
+
+    .save-btn {
+      width: 100%; padding: 9px;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .save-btn:hover { background: rgba(108,99,255,0.1); }
+
+    .saved-toast {
+      text-align: center; font-size: 11px;
+      color: var(--success); margin-top: 8px;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .saved-toast.show { opacity: 1; }
+
+    .hint {
+      font-size: 11px; color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 12px; line-height: 1.5;
+      margin-top: 12px;
+    }
+    .hint strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="title">AutoForm</div>
+      <div class="subtitle">smart form filler</div>
+    </div>
+  </div>
+  <span class="badge">v1.0</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="fill">Fill</div>
+  <div class="tab" data-tab="fields">Fields</div>
+  <div class="tab" data-tab="custom">Custom</div>
+</div>
+
+<!-- FILL TAB -->
+<div class="panel active" id="tab-fill">
+  <button class="fill-btn" id="popup-fill-btn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+    </svg>
+    Fill Form Now
+  </button>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num green" id="stat-filled">–</div>
+      <div class="stat-label">Filled</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num yellow" id="stat-skipped">–</div>
+      <div class="stat-label">Skipped</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-total">–</div>
+      <div class="stat-label">Total</div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint-fill-entrypoint">
+    💡 An <strong>Auto Fill</strong> button is also injected directly on the page — look for the floating button in the bottom-right corner.
+  </div>
+</div>
+
+<!-- FIELDS TAB -->
+<div class="panel" id="tab-fields">
+  <div class="config-group" style="margin-bottom:10px;">
+    <div class="config-label">
+      Search property
+    </div>
+    <input
+      id="field-search-attr"
+      class="config-input"
+      type="text"
+      placeholder="Attribute name (e.g. data-automation-id, id, name, aria-id)"
+      value="data-automation-id"
+    />
+    <input
+      id="field-search-value"
+      class="config-input"
+      type="text"
+      placeholder="Optional value/text contains"
+      style="margin-top:6px;"
+    />
+  </div>
+  <button class="scan-btn" id="scan-btn">🔍 Search fields</button>
+  <div class="section-title">Detected fields</div>
+  <div class="field-list" id="field-list">
+    <div class="empty-state">Click "Scan" to detect fields on this page</div>
+  </div>
+</div>
+
+<!-- CUSTOM TAB -->
+<div class="panel" id="tab-custom">
+  <div class="section-title expandable" id="section-custom-rules-title" style="margin-bottom:12px">
+    <span>Custom rules</span>
+    <span class="section-toggle-indicator" id="toggle-custom-rules-indicator">▸</span>
+  </div>
+
+  <div id="custom-rules-body" style="display:none;">
+    <div id="custom-rules-container"></div>
+    <button class="scan-btn" id="add-custom-rule-btn">+ Add selector rule</button>
+  </div>
+
+  <div class="section-title expandable" id="section-custom-vars-title" style="margin:16px 0 8px">
+    <span>Custom vars</span>
+    <span class="section-toggle-indicator" id="toggle-custom-vars-indicator">▸</span>
+  </div>
+
+  <div id="custom-vars-body" style="display:none;">
+    <div id="custom-vars-container"></div>
+    <button class="scan-btn" id="add-custom-var-btn">+ Add custom var</button>
+  </div>
+
+  <button class="save-btn" id="save-custom-rules-btn">Save Custom Setup</button>
+
+  <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+    <button class="scan-btn" id="close-popup-btn" style="flex:0 0 auto; min-width:80px;">Close</button>
+  </div>
+
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <button class="scan-btn" id="export-config-btn" style="flex:1;">Download JSON</button>
+    <label class="scan-btn" id="import-config-label" style="flex:1; text-align:center; cursor:pointer;">
+      Upload JSON
+      <input type="file" id="import-config-input" accept="application/json" style="display:none;" />
+    </label>
+  </div>
+
+  <div class="saved-toast" id="saved-toast">✓ Saved successfully</div>
+
+  <div class="hint" id="close-confirm-panel" style="margin-top:10px; display:none;">
+    <div>Save changes before closing?</div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="save-btn" id="close-confirm-save" style="flex:1;">Save &amp; Close</button>
+      <button class="scan-btn" id="close-confirm-discard" style="flex:1;">Leave without saving</button>
+      <button class="scan-btn" id="close-confirm-cancel" style="flex:1;">Cancel</button>
+    </div>
+  </div>
+
+  <div class="hint" id="hint-custom-vars" style="margin-top:10px">
+    <strong>Variables</strong><br/>
+    - Manual: fixed value you type.<br/>
+    - Random first / last name: picked once per fill.<br/>
+    - Timestamp: single value generated at the start.<br/>
+    Use them in templates as <code>{{your_var_name}}</code>.<br/>
+    Click a variable pill below to insert it into the last focused template.
+  </div>
+
+  <div class="hint" id="custom-vars-pills" style="margin-top:8px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:6px; width:calc(100% - 28px);"></div>
+
+  <div class="hint" id="hint-template-example" style="margin-top:10px">
+    Example value template: <strong>testUser_{{timestamp}}</strong><br/>
+    On fill, this becomes something like <code>testUser_20260304153022</code> (current date &amp; time).
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
