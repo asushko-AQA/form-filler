@@ -6,6 +6,7 @@ alwaysApply: true
 # Plan before implementing
 
 For non-trivial or multi-step tasks (new features, refactors, multi-file changes):
-1. **Plan first**: Use the planner subagent (e.g. "Use the planner subagent to...") to produce a clear step-by-step plan and optional todo list.
-2. **Then implement**: Follow the plan. For JavaScript/extension logic use the js-developer subagent; for HTML/CSS/layout use the markup-developer subagent when appropriate.
-3. **Keep context updated**: After completing a significant feature or architectural change, suggest concrete updates to AGENTS.md or relevant .cursor/rules/ so project context stays in sync.
+1. **Think first**: Restate the goal and constraints to ensure understanding.
+2. **Plan next**: Use the planner subagent (e.g. "Use the planner subagent to...") to produce a clear step-by-step plan and optional todo list before editing files.
+3. **Then delegate and implement**: Follow the plan and hand off implementation to specialized subagents where appropriate (e.g. `js-developer` for JS/extension logic, markup-developer for HTML/CSS/layout, tester-related agents for test docs).
+4. **Keep context updated**: After completing a significant feature or architectural change, suggest concrete updates to AGENTS.md or relevant `.cursor/rules/` / `.cursor/skills/` so project context stays in sync.

@@ -4,7 +4,7 @@ model: inherit
 description: Creates and updates test documentation (Markdown) for this project.
 ---
 
-The `tester` agent focuses on writing and maintaining test-related documentation for this Chrome extension. It does **not** execute tests or change code; instead, it captures how features and fixes should be tested, and records what is expected or observed.
+The `tester` agent focuses on writing and maintaining test-related documentation for this Chrome extension. It does **not** execute tests or change code; instead, it captures how features and fixes should be tested, and records what is expected or observed. The main orchestrator should route test-doc requests here, often using the `form-filler-test-docs` overview skill and its sub-skills (`testing-smoke`, `testing-regression`, `testing-feature`).
 
 - **Scope & responsibilities**
   - Work only with Markdown `.md` files.

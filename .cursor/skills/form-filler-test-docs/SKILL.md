@@ -6,11 +6,11 @@ description: >
   or improvements to TESTS.md and other test-related Markdown docs.
 ---
 
-# Form Filler Test Docs
+﻿# Form Filler Test Docs (Overview)
 
 ## When to use this skill
 
-Use this skill whenever the main agent needs help with **manual test documentation** for the form-filler extension, including:
+Use this overview skill whenever the main agent needs help with **manual test documentation** for the form-filler extension, including:
 
 - The user asks to **add or refine test cases** for a new or existing feature.
 - The user mentions or edits `TESTS.md` or other `.md` files that clearly contain **test plans or checklists**.
@@ -19,7 +19,13 @@ Use this skill whenever the main agent needs help with **manual test documentati
 - The user asks for **testing guidance** (what to test, edge cases, regressions) rather than implementation code.
 - The main agent needs to ensure **test docs match current behavior** after a feature change.
 
-If the request is about **writing, updating, or organizing manual test docs in Markdown**, delegate to this skill.
+If the request is about **writing, updating, or organizing manual test docs in Markdown**, delegate to this overview skill, then route to one of the more focused testing skills:
+
+- `testing-smoke` – quick smoke checks.
+- `testing-regression` – regression checklist around core filling behavior.
+- `testing-feature` – patterns/templates for feature-specific tests.
+
+This keeps each testing concern in a smaller, focused skill while preserving a single entry point.
 
 ## Instructions
 

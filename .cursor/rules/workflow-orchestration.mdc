@@ -1,0 +1,55 @@
+---
+description: Main agent orchestrator behavior – think → plan → delegate, plus Build, Plan iteration, and release flows
+alwaysApply: true
+---
+
+# Orchestrated workflows
+
+For all non-trivial or multi-step tasks (new features, refactors, multi-file changes), the main agent acts as an **orchestrator**:
+
+1. **Think**: Restate the user goal and constraints in your own words.
+2. **Plan**: Use the planner behavior (or `planer` agent) to outline steps before editing any files.
+3. **Delegate**: Hand off implementation to specialized subagents (e.g. `js-developer`, `tester`, shell) following the plan.
+
+For small, clearly-trivial edits (e.g. a one-line doc tweak), you may do a lightweight internal plan but should still describe the intended steps before changing files.
+
+## High-level commands
+
+### Build
+
+When the user requests a **Build** or release-like action (e.g. “Build”, “prepare a new release”, “bump version and update changelog”):
+
+1. **Recognize intent** as a Build workflow.
+2. **Consult the `build-and-release` skill** for inputs, outputs, and procedure.
+3. **Plan** the concrete steps for this build (which version, which files, which docs).
+4. **Delegate**:
+   - To `js-developer` (or equivalent) for version bumps and manifest/code changes.
+   - To testing skills/agents if test docs or regression checklists must be updated.
+
+### Plan iteration
+
+When the user asks to **plan an iteration** (e.g. “Plan iteration after 1.4.0”, “Plan v1.5.0”):
+
+1. **Recognize intent** as an Iteration Planning workflow.
+2. **Consult the `iteration-planning` skill** for how to structure the plan.
+3. **Ensure planning artefacts**:
+   - Use `Plans.md` as the persistent iteration plan document.
+   - Optionally use `plan.md` as a temporary working pad, but copy final decisions into `Plans.md`.
+4. **Delegate**:
+   - To a shell-capable agent to create a branch using the agreed naming convention, if requested.
+   - To other agents to flesh out features and testing notes under the new version section in `Plans.md`.
+
+## Planning artefacts
+
+- `plan.md` in the project root is an **ephemeral working plan** and is `.gitignore`d; do not treat it as canonical documentation.
+- `Plans.md` in the project root is the **long-lived, versioned iteration plan**; ensure iteration-related decisions land there.
+
+## Release Manager flows
+
+The Release Manager behavior is described in the `release-manager` skill and
+uses:
+
+- `plan.md` sections like `## Release YYYY-MM-DD` for active work items.
+- `developing-vX.X.X` branches based on a semantic MINOR bump by default.
+- `CHANGELOG.md` and `README.md` for documenting completed work.
+

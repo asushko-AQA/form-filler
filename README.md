@@ -101,3 +101,24 @@ The extension no longer tries to infer or auto-map values based on attribute nam
 - Handles `<input>`, `<textarea>`, `<select>`, and many select-like widgets (via ARIA roles and common CSS classes).
 - Re-injects the floating button on SPA navigation (MutationObserver).
 - All configuration (rules and variables) is persisted via `chrome.storage.sync`.
+
+---
+
+## 🤖 AI Orchestration & Workflows
+
+This repo is configured for AI-assisted workflows in Cursor. The main agent acts as an **orchestrator**:
+
+- **Think → Plan → Delegate**:
+  - For non-trivial changes, the agent first restates the goal, then creates a short plan before editing, and finally delegates implementation to specialized subagents.
+- **Key domain skills**:
+  - `build-and-release` – guides the **Build** workflow (version bump, README update, changelog).
+  - `iteration-planning` – guides **Plan iteration** tasks (future version, branch naming, `Plans.md` updates).
+  - Testing skills:
+    - `form-filler-test-docs` – overview for manual test docs.
+    - `testing-smoke` – quick smoke checks.
+    - `testing-regression` – core regression focus.
+    - `testing-feature` – feature-level test templates.
+- **Planning artefacts**:
+  - `plan.md` – ephemeral working plan (ignored by git).
+  - `Plans.md` – persistent iteration plan with versioned sections.
+

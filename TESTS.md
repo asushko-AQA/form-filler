@@ -4,6 +4,14 @@ This document describes **manual test coverage** for the current AutoForm Filler
 
 ## Popup – Fill Tab
 
+### Feature: Popup Header Version Badge
+
+Short description: The popup header badge shows the current extension version from `manifest.json` (e.g. `v1.2.0`) and is non-clickable.
+
+- [ ] With the extension loaded, open the popup and verify that the header version badge text matches `v<version>` where `<version>` is the `version` value from `manifest.json`.
+- [ ] Change the `version` in `manifest.json`, reload the extension in `chrome://extensions`, reopen the popup, and verify the header badge updates to show the new `v<version>` value.
+- [ ] Click the version badge in the popup header and confirm that nothing happens (no navigation, no new tabs, and no visible state change apart from normal focus behavior).
+
 ### Feature: Fill Form from Popup
 
 Short description: Trigger a fill run for the active tab using the popup `Fill Form Now` button and show summary stats, based solely on configured custom selector rules.
