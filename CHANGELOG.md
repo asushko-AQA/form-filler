@@ -11,3 +11,11 @@ All notable changes to this project will be documented in this file.
 - Tightened validation: selectors must be unique and valid; autosave and Save are blocked while the active rule has errors or an empty selector/value.
 - Prevented adding new selector rules while the current active rule is invalid, and renamed the section to “Custom rules” which auto-expands when opened from the Fields tab.
 
+## 1.2.1 — 2026-03-18
+
+- Added AI orchestration configuration for this repo:
+  - Main agent now follows a **Think → Plan → Delegate** workflow for non-trivial changes.
+  - Introduced domain skills for Build & Release, Iteration Planning, and release management.
+  - Split test-doc guidance into smaller skills for smoke, regression, and feature-level testing.
+- Documented AI workflows, planning artefacts (`plan.md`, `Plans.md`), and version badge behavior in `README.md` / `TESTS.md`.
+

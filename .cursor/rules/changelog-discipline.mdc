@@ -1,0 +1,24 @@
+---
+description: Always keep CHANGELOG.md in sync with non-trivial changes and verify it before commits and pushes
+alwaysApply: true
+---
+
+# Changelog discipline
+
+For any **non-trivial change or fix** (feature work, refactor, bug fix, or behavior change):
+
+1. **Update CHANGELOG.md**
+   - Identify the relevant version section (e.g. current `Unreleased` bucket or a specific `vX.Y.Z`).
+   - Add or adjust bullets so they accurately describe the user-visible or release-relevant impact of the change.
+   - Create a new version section when starting a new version line, following the existing style in `CHANGELOG.md`.
+
+2. **Before every commit**
+   - Re-read `CHANGELOG.md` and ensure it matches the set of staged changes.
+   - If something is missing or outdated relative to the diff, update the changelog **before** finalizing the commit.
+
+3. **Before every push**
+   - Double-check that the latest local commits have appropriate changelog entries.
+   - When in doubt, prefer a short, accurate bullet over omitting the change.
+
+This rule ensures `CHANGELOG.md` remains a reliable summary of what changed in each version, and is actively maintained as part of the normal commit/push flow.
+
