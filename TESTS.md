@@ -95,6 +95,18 @@ Short description: Saving custom rules persists them per URL (without hash) usin
 - [ ] On Page B, create different rules, save them, then switch back to Page A and verify that Page A’s rules are still intact and independent.
 - [ ] On a single‑page application where the URL hash changes but the base URL remains the same, confirm that rules are shared across hash‑only navigations (TBD: confirm exact expected behavior).
 
+### Feature: Context URL Matching Modes
+
+Short description: Contexts can be matched using strict or weak URL pattern modes (`exact`, `prefix`, `wildcard`, `pathSegmentWildcard`).
+
+- [ ] In Custom tab, confirm the **Context URL pattern** section is collapsed by default and can be expanded/collapsed like **Custom rules** and **Custom vars**.
+- [ ] With the section expanded, confirm the pattern input auto-grows to fit multiple lines and does not show a resize-handle artifact in the bottom-right.
+- [ ] In Custom tab, set pattern to `my-site.com/*` with **Wildcard** mode, save rules, then verify they apply on `my-site.com/home`, `my-site.com/sign-in`, and `my-site.com/cart?prodId=ZX121`.
+- [ ] Set pattern to `my-site.com/users/*/data` with **Path segment wildcard** mode and verify it matches `my-site.com/users/11/data` but does not match `my-site.com/users/11/extra/data`.
+- [ ] Set **Exact (strict)** mode with a fully specific URL and verify that only that exact URL context is applied.
+- [ ] Confirm hash-only URL changes (e.g. `#sectionA` to `#sectionB`) do not break context matching.
+- [ ] Export a config and verify the JSON includes `pattern` and `matchMode`; import it back and verify the same matching behavior is restored.
+
 ## Popup – Custom Tab: Variables and Templates
 
 ### Feature: Built‑In and Custom Variables

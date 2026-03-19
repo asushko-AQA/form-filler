@@ -17,10 +17,64 @@ function getActiveTab() {
   );
 }
 
-function getContextKeyFromUrl(url) {
-  if (!url) return "";
-  // Normalize by stripping hash fragments
-  return url.split("#")[0];
+function getCurrentContextFormState() {
+  const patternInput = document.getElementById("context-pattern-input");
+  const matchModeInput = document.getElementById("context-match-mode");
+  return {
+    pattern: patternInput ? patternInput.value.trim() : "",
+    matchMode: matchModeInput ? matchModeInput.value : ContextMatcher.MATCH_MODE.EXACT,
+  };
+}
+
+function setCurrentContextFormState(pattern, matchMode) {
+  const patternInput = document.getElementById("context-pattern-input");
+  const matchModeInput = document.getElementById("context-match-mode");
+  if (patternInput) patternInput.value = pattern || "";
+  if (matchModeInput) matchModeInput.value = matchMode || ContextMatcher.MATCH_MODE.EXACT;
+  if (patternInput) {
+    patternInput.style.height = "auto";
+    const nextHeight = Math.max(40, Math.min(patternInput.scrollHeight, 180));
+    patternInput.style.height = `${nextHeight}px`;
+  }
+}
+
+function showContextPatternError(message) {
+  const errorEl = document.getElementById("context-pattern-error");
+  if (!errorEl) return;
+  if (!message) {
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+    return;
+  }
+  errorEl.textContent = message;
+  errorEl.style.display = "block";
+}
+
+function buildLegacyContextMap(entries) {
+  const map = {};
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    if (!entry || entry.matchMode !== ContextMatcher.MATCH_MODE.EXACT) return;
+    map[entry.pattern] = {
+      customSelectors: Array.isArray(entry.customSelectors) ? entry.customSelectors : [],
+      customVars: Array.isArray(entry.customVars) ? entry.customVars : [],
+    };
+  });
+  return map;
+}
+
+function getStorageContexts() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["contextEntries", "contextConfigs"], (res) => {
+      const entries = ContextMatcher.normalizeStoredContexts(res || {});
+      resolve(entries);
+    });
+  });
+}
+
+function setStorageContexts(entries, cb) {
+  const contextEntries = Array.isArray(entries) ? entries : [];
+  const contextConfigs = buildLegacyContextMap(contextEntries);
+  chrome.storage.sync.set({ contextEntries, contextConfigs }, cb);
 }
 
 async function sendToContent(msg) {
@@ -51,6 +105,8 @@ let varSuggestBox = null;
 let currentActiveRuleRow = null;
 let lastSavedStateToken = null;
 let isReorderMode = false;
+let activeTabUrl = "";
+let activeContextEntryId = null;
 
 const DEFAULT_CUSTOM_VARS = [
   { key: "randomFirstName", type: "randomFirstName", value: "" },
@@ -915,9 +971,12 @@ document.getElementById("popup-fill-btn").addEventListener("click", async () => 
   btn.disabled = true;
   btn.textContent = "Filling…";
 
-  const stored = await new Promise(res => chrome.storage.sync.get(["customSelectors", "customVars"], res));
-  const customSelectors = stored.customSelectors || [];
-  const customVars = stored.customVars || [];
+  const tab = await getActiveTab();
+  const url = tab && tab.url ? tab.url : "";
+  const entries = await getStorageContexts();
+  const ctx = ContextMatcher.pickBestContextEntry(entries, url) || {};
+  const customSelectors = Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [];
+  const customVars = Array.isArray(ctx.customVars) ? ctx.customVars : [];
 
   const result = await sendToContent({ action: "fill", customSelectors, customVars });
 
@@ -1059,16 +1118,22 @@ document.getElementById("scan-btn").addEventListener("click", async () => {
 
 (async () => {
   const tab = await getActiveTab();
-  const contextKey = getContextKeyFromUrl(tab && tab.url);
+  activeTabUrl = tab && tab.url ? tab.url : "";
+  const entries = await getStorageContexts();
+  const ctx = ContextMatcher.pickBestContextEntry(entries, activeTabUrl);
+  const defaultPattern = ContextMatcher.canonicalPattern(activeTabUrl);
+  const defaultMode = ContextMatcher.MATCH_MODE.EXACT;
+  const selectedPattern = ctx && ctx.pattern ? ctx.pattern : defaultPattern;
+  const selectedMode = ctx && ctx.matchMode ? ctx.matchMode : defaultMode;
+  activeContextEntryId = ctx && ctx.id ? ctx.id : null;
+  setCurrentContextFormState(selectedPattern, selectedMode);
+  showContextPatternError("");
 
-  chrome.storage.sync.get(["contextConfigs"], (res) => {
-    const contexts = res.contextConfigs || {};
-    const ctx = contexts[contextKey] || {};
-    renderCustomRules(Array.isArray(ctx.customSelectors) ? ctx.customSelectors : []);
-    renderCustomVars(Array.isArray(ctx.customVars) ? ctx.customVars : []);
-    // Initialize saved state token from loaded data
-    lastSavedStateToken = getCurrentStateToken();
-  });
+  const loadedRules = ctx && Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [];
+  const loadedVars = ctx && Array.isArray(ctx.customVars) ? ctx.customVars : [];
+  renderCustomRules(loadedRules);
+  renderCustomVars(loadedVars);
+  lastSavedStateToken = getCurrentStateToken();
 })();
 
 // ── Custom selectors: add/save ────────────────
@@ -1544,15 +1609,29 @@ function collectCustomSetup() {
 
 async function saveCustomSetup(showToast) {
   const { rules, vars } = collectCustomSetup();
-  lastSavedStateToken = JSON.stringify({ rules, vars });
-  const tab = await getActiveTab();
-  const contextKey = getContextKeyFromUrl(tab && tab.url);
+  const contextState = getCurrentContextFormState();
+  const validation = ContextMatcher.validateContextPattern(contextState.pattern, contextState.matchMode);
+  if (!validation.ok) {
+    showContextPatternError(validation.message || "Invalid context URL pattern.");
+    return;
+  }
+  showContextPatternError("");
+  lastSavedStateToken = JSON.stringify({ rules, vars, contextState });
+  const entries = await getStorageContexts();
+  const entriesWithoutCurrent = activeContextEntryId
+    ? entries.filter((entry) => entry && entry.id !== activeContextEntryId)
+    : entries;
+  const nextEntries = ContextMatcher.saveContextEntry(entriesWithoutCurrent, {
+    id: activeContextEntryId || undefined,
+    pattern: contextState.pattern,
+    matchMode: contextState.matchMode,
+    customSelectors: rules,
+    customVars: vars,
+  });
+  const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
+  activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : activeContextEntryId;
 
-  chrome.storage.sync.get(["contextConfigs"], (res) => {
-    const contexts = res.contextConfigs || {};
-    contexts[contextKey] = { customSelectors: rules, customVars: vars };
-
-    chrome.storage.sync.set({ contextConfigs: contexts }, () => {
+  setStorageContexts(nextEntries, () => {
       // After a successful save, treat all rules as inactive so the next edit
       // session starts with an explicit activation.
       clearActiveRuleRow();
@@ -1574,12 +1653,12 @@ async function saveCustomSetup(showToast) {
         }
       }
     });
-  });
 }
 
 function getCurrentStateToken() {
   const { rules, vars } = collectCustomSetup();
-  return JSON.stringify({ rules, vars });
+  const contextState = getCurrentContextFormState();
+  return JSON.stringify({ rules, vars, contextState });
 }
 
 function hasUnsavedChanges() {
@@ -1669,17 +1748,20 @@ document.getElementById("close-confirm-save").addEventListener("click", async ()
 // ── Import / export config as JSON ─────────────
 
 document.getElementById("export-config-btn").addEventListener("click", async () => {
-  const tab = await getActiveTab();
-  const contextKey = getContextKeyFromUrl(tab && tab.url);
-
-  const stored = await new Promise(res =>
-    chrome.storage.sync.get(["contextConfigs"], res)
-  );
-
-  const contexts = stored.contextConfigs || {};
-  const ctx = contexts[contextKey] || {};
+  const entries = await getStorageContexts();
+  const state = getCurrentContextFormState();
+  const ctx =
+    ContextMatcher.pickBestContextEntry(entries, activeTabUrl) ||
+    ContextMatcher.normalizeEntry({
+      pattern: state.pattern,
+      matchMode: state.matchMode,
+      customSelectors: [],
+      customVars: [],
+    }) || {};
 
   const payload = {
+    pattern: ctx.pattern || state.pattern || "",
+    matchMode: ctx.matchMode || state.matchMode || ContextMatcher.MATCH_MODE.EXACT,
     customSelectors: Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [],
     customVars: Array.isArray(ctx.customVars) ? ctx.customVars : [],
   };
@@ -1706,17 +1788,40 @@ document.getElementById("import-config-input").addEventListener("change", (e) =>
       const json = JSON.parse(reader.result);
       const customSelectors = Array.isArray(json.customSelectors) ? json.customSelectors : [];
       const customVars = Array.isArray(json.customVars) ? json.customVars : [];
+      const state = getCurrentContextFormState();
+      const pattern = typeof json.pattern === "string" && json.pattern.trim()
+        ? json.pattern.trim()
+        : state.pattern;
+      const matchMode = typeof json.matchMode === "string" && json.matchMode
+        ? json.matchMode
+        : state.matchMode;
+      const validation = ContextMatcher.validateContextPattern(pattern, matchMode);
+      if (!validation.ok) {
+        showContextPatternError(validation.message || "Imported context pattern is invalid.");
+        input.value = "";
+        return;
+      }
 
-      getActiveTab().then((tab) => {
-        const contextKey = getContextKeyFromUrl(tab && tab.url);
-        chrome.storage.sync.get(["contextConfigs"], (res) => {
-          const contexts = res.contextConfigs || {};
-          contexts[contextKey] = { customSelectors, customVars };
-          chrome.storage.sync.set({ contextConfigs: contexts }, () => {
-            renderCustomRules(customSelectors);
-            renderCustomVars(customVars);
-            input.value = "";
-          });
+      getStorageContexts().then((entries) => {
+        const entriesWithoutCurrent = activeContextEntryId
+          ? entries.filter((entry) => entry && entry.id !== activeContextEntryId)
+          : entries;
+        const nextEntries = ContextMatcher.saveContextEntry(entriesWithoutCurrent, {
+          id: activeContextEntryId || undefined,
+          pattern,
+          matchMode,
+          customSelectors,
+          customVars,
+        });
+        setStorageContexts(nextEntries, () => {
+          const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
+          activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : activeContextEntryId;
+          setCurrentContextFormState(pattern, matchMode);
+          showContextPatternError("");
+          renderCustomRules(customSelectors);
+          renderCustomVars(customVars);
+          input.value = "";
+          lastSavedStateToken = getCurrentStateToken();
         });
       });
     } catch (err) {
@@ -1895,6 +2000,33 @@ document.addEventListener("click", (e) => {
   hideVarSuggestions();
 });
 
+const contextPatternInput = document.getElementById("context-pattern-input");
+const contextMatchModeInput = document.getElementById("context-match-mode");
+
+function autoSizeContextPatternInput() {
+  if (!contextPatternInput) return;
+  contextPatternInput.style.height = "auto";
+  const nextHeight = Math.max(40, Math.min(contextPatternInput.scrollHeight, 180));
+  contextPatternInput.style.height = `${nextHeight}px`;
+}
+
+if (contextPatternInput) {
+  autoSizeContextPatternInput();
+  contextPatternInput.addEventListener("input", () => {
+    autoSizeContextPatternInput();
+    const { pattern, matchMode } = getCurrentContextFormState();
+    const valid = ContextMatcher.validateContextPattern(pattern, matchMode);
+    showContextPatternError(valid.ok ? "" : valid.message);
+  });
+}
+if (contextMatchModeInput) {
+  contextMatchModeInput.addEventListener("change", () => {
+    const { pattern, matchMode } = getCurrentContextFormState();
+    const valid = ContextMatcher.validateContextPattern(pattern, matchMode);
+    showContextPatternError(valid.ok ? "" : valid.message);
+  });
+}
+
 // ── Custom tab autosave on blur ────────────────
 
 (function setupCustomAutosave() {
@@ -1944,6 +2076,10 @@ document.addEventListener("click", (e) => {
 // ── Expandable sections & pills positioning ────
 
 (function setupExpandableSectionsAndPills() {
+  const contextTitle = document.getElementById("section-context-url-title");
+  const contextBody = document.getElementById("context-url-body");
+  const contextIndicator = document.getElementById("toggle-context-url-indicator");
+
   const rulesTitle = document.getElementById("section-custom-rules-title");
   const rulesBody = document.getElementById("custom-rules-body");
   const rulesIndicator = document.getElementById("toggle-custom-rules-indicator");
@@ -1959,6 +2095,9 @@ document.addEventListener("click", (e) => {
     indicator.textContent = isHidden ? "▾" : "▸";
   }
 
+  if (contextTitle && contextBody && contextIndicator) {
+    contextTitle.addEventListener("click", () => toggleSection(contextBody, contextIndicator));
+  }
   if (rulesTitle && rulesBody && rulesIndicator) {
     rulesTitle.addEventListener("click", () => toggleSection(rulesBody, rulesIndicator));
   }

@@ -534,11 +534,10 @@ function injectButton() {
     btn.style.opacity = "0.7";
 
     // Pull custom selectors and vars from storage if any, for this page context
-    chrome.storage.sync.get(["contextConfigs"], (res) => {
+    chrome.storage.sync.get(["contextEntries", "contextConfigs"], (res) => {
       (async () => {
-        const contexts = res.contextConfigs || {};
-        const contextKey = window.location.href.split("#")[0];
-        const ctx = contexts[contextKey] || {};
+        const entries = ContextMatcher.normalizeStoredContexts(res || {});
+        const ctx = ContextMatcher.pickBestContextEntry(entries, window.location.href) || {};
         const customSelectors = Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [];
         const customVars = Array.isArray(ctx.customVars) ? ctx.customVars : [];
         const customValues = buildCustomVarValues(customVars);
@@ -575,8 +574,8 @@ function injectButton() {
 // ── Observer: re-inject if DOM changes (SPAs) ─
 
 function shouldShowInjectedButton(contexts) {
-  const contextKey = window.location.href.split("#")[0];
-  const ctx = contexts && contexts[contextKey];
+  const entries = ContextMatcher.normalizeStoredContexts(contexts || {});
+  const ctx = ContextMatcher.pickBestContextEntry(entries, window.location.href);
   if (!ctx) return false;
   const hasSelectors = Array.isArray(ctx.customSelectors) && ctx.customSelectors.length > 0;
   const hasVars = Array.isArray(ctx.customVars) && ctx.customVars.length > 0;
@@ -585,16 +584,14 @@ function shouldShowInjectedButton(contexts) {
 
 function waitForBody() {
   if (document.body) {
-    chrome.storage.sync.get(["contextConfigs"], (res) => {
-      const contexts = res.contextConfigs || {};
-      if (shouldShowInjectedButton(contexts)) {
+    chrome.storage.sync.get(["contextEntries", "contextConfigs"], (res) => {
+      if (shouldShowInjectedButton(res || {})) {
         injectButton();
         // Re-check on SPA navigation
         const obs = new MutationObserver(() => {
           if (!document.getElementById("autoform-btn-wrap")) {
-            chrome.storage.sync.get(["contextConfigs"], (res2) => {
-              const ctx2 = res2.contextConfigs || {};
-              if (shouldShowInjectedButton(ctx2)) {
+            chrome.storage.sync.get(["contextEntries", "contextConfigs"], (res2) => {
+              if (shouldShowInjectedButton(res2 || {})) {
                 injectButton();
               }
             });

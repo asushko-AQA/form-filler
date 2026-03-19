@@ -230,6 +230,13 @@
     }
     .config-input:focus { border-color: var(--accent); }
     .config-input::placeholder { color: var(--muted); }
+    .context-pattern-area {
+      min-height: 40px;
+      max-height: 180px;
+      resize: none;
+      overflow: hidden;
+      line-height: 1.35;
+    }
 
     .save-btn {
       width: 100%; padding: 9px;
@@ -341,6 +348,23 @@
 
 <!-- CUSTOM TAB -->
 <div class="panel" id="tab-custom">
+  <div class="section-title expandable" id="section-context-url-title" style="margin-bottom:12px">
+    <span>Context URL pattern</span>
+    <span class="section-toggle-indicator" id="toggle-context-url-indicator">▸</span>
+  </div>
+  <div id="context-url-body" style="display:none;">
+    <div class="config-group">
+      <textarea id="context-pattern-input" class="config-input context-pattern-area" placeholder="my-site.com/* or my-site.com/users/*/data"></textarea>
+      <select id="context-match-mode" class="config-input" style="margin-top:6px;">
+        <option value="exact">Exact (strict)</option>
+        <option value="prefix">Prefix</option>
+        <option value="wildcard">Wildcard (*)</option>
+        <option value="pathSegmentWildcard">Path segment wildcard (*)</option>
+      </select>
+      <div id="context-pattern-error" style="margin-top:4px;font-size:11px;color:#f97373;display:none;"></div>
+    </div>
+  </div>
+
   <div class="section-title expandable" id="section-custom-rules-title" style="margin-bottom:12px">
     <span>Custom rules</span>
     <span class="section-toggle-indicator" id="toggle-custom-rules-indicator">▸</span>
@@ -403,6 +427,7 @@
   </div>
 </div>
 
+<script src="context-matcher.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>
