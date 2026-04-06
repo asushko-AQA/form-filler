@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased 1.x.x] — started 2026-03-09
 
+- Expanded random first-name and last-name pools from 10 to 60 entries each, giving more variety when filling forms with `randomFirstName` / `randomLastName` custom variables.
+
 ## 1.2.2 — 2026-03-19
 
 - Added configurable context URL matching for custom rules/vars with strict (`exact`) and weak (`prefix`, `wildcard`, `pathSegmentWildcard`) modes, including wildcard patterns like `my-site.com/*` and `my-site.com/users/*/data`.

@@ -4,8 +4,22 @@
 
 // ── Data generators ──────────────────────────
 
-const FIRST_NAMES = ["Alice", "Bob", "Carol", "David", "Emma", "Frank", "Grace", "Henry", "Iris", "James"];
-const LAST_NAMES  = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Wilson", "Taylor"];
+const FIRST_NAMES = [
+  "Alice", "Bob", "Carol", "David", "Emma", "Frank", "Grace", "Henry", "Iris", "James",
+  "Karen", "Liam", "Mia", "Noah", "Olivia", "Paul", "Quinn", "Rachel", "Samuel", "Tina",
+  "Umar", "Vera", "Walter", "Xena", "Yara", "Zachary", "Amanda", "Brian", "Chloe", "Derek",
+  "Elaine", "Felix", "Gina", "Harold", "Ingrid", "Jake", "Kara", "Louis", "Monica", "Nathan",
+  "Ophelia", "Peter", "Queenie", "Rita", "Scott", "Teresa", "Uma", "Victor", "Wendy", "Xavier",
+  "Yvonne", "Zoe", "Aaron", "Bella", "Charles", "Diana", "Ethan", "Fiona", "George", "Hannah",
+];
+const LAST_NAMES  = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Wilson", "Taylor",
+  "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Moore", "Young", "Allen",
+  "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores", "Green", "Adams", "Nelson",
+  "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts", "Gomez", "Phillips", "Evans",
+  "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes", "Stewart", "Morris", "Sanchez",
+  "Rogers", "Reed", "Cook", "Morgan", "Bell", "Murphy", "Bailey", "Cooper", "Richardson", "Cox",
+];
 const DOMAINS     = ["gmail.com", "yahoo.com", "outlook.com", "example.com", "testmail.dev"];
 const STREETS     = ["Main St", "Oak Ave", "Maple Blvd", "Cedar Ln", "Pine Rd", "Elm Dr", "Park Way"];
 const CITIES      = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio"];
