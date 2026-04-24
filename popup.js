@@ -1789,12 +1789,18 @@ document.getElementById("import-config-input").addEventListener("change", (e) =>
       const customSelectors = Array.isArray(json.customSelectors) ? json.customSelectors : [];
       const customVars = Array.isArray(json.customVars) ? json.customVars : [];
       const state = getCurrentContextFormState();
-      const pattern = typeof json.pattern === "string" && json.pattern.trim()
+      const importedPattern = typeof json.pattern === "string" && json.pattern.trim()
         ? json.pattern.trim()
         : state.pattern;
-      const matchMode = typeof json.matchMode === "string" && json.matchMode
+      const importedMatchMode = typeof json.matchMode === "string" && json.matchMode
         ? json.matchMode
         : state.matchMode;
+      const importedCanonical = ContextMatcher.canonicalPattern(importedPattern);
+      const currentCanonical = ContextMatcher.canonicalPattern(state.pattern || activeTabUrl);
+      const shouldMapToCurrentContext =
+        !!currentCanonical && !!importedCanonical && importedCanonical !== currentCanonical;
+      const pattern = shouldMapToCurrentContext ? currentCanonical : importedPattern;
+      const matchMode = shouldMapToCurrentContext ? state.matchMode : importedMatchMode;
       const validation = ContextMatcher.validateContextPattern(pattern, matchMode);
       if (!validation.ok) {
         showContextPatternError(validation.message || "Imported context pattern is invalid.");
