@@ -1747,6 +1747,125 @@ document.getElementById("close-confirm-save").addEventListener("click", async ()
 
 // ── Import / export config as JSON ─────────────
 
+function showImportPatternError(message) {
+  const errorEl = document.getElementById("import-pattern-error");
+  if (!errorEl) return;
+  if (!message) {
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+    return;
+  }
+  errorEl.textContent = message;
+  errorEl.style.display = "block";
+}
+
+function autoSizeImportPatternInput() {
+  const patternInput = document.getElementById("import-pattern-input");
+  if (!patternInput) return;
+  patternInput.style.height = "auto";
+  const nextHeight = Math.max(40, Math.min(patternInput.scrollHeight, 180));
+  patternInput.style.height = `${nextHeight}px`;
+}
+
+function showImportJsonError(message) {
+  const errorEl = document.getElementById("import-json-error");
+  if (!errorEl) return;
+  if (!message) {
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+    return;
+  }
+  errorEl.textContent = message;
+  errorEl.style.display = "block";
+}
+
+function hideImportConfirmPanel() {
+  const panel = document.getElementById("import-confirm-panel");
+  if (panel) panel.style.display = "none";
+  showImportPatternError("");
+  showImportJsonError("");
+}
+
+function resetImportInputs() {
+  const jsonInput = document.getElementById("import-json-input");
+  if (jsonInput) jsonInput.value = "";
+  showImportJsonError("");
+}
+
+function updateImportSourceCaptionFromJson(text) {
+  const caption = document.getElementById("import-source-caption");
+  if (!caption) return;
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    caption.textContent = "Paste JSON from a downloaded config file.";
+    return;
+  }
+  try {
+    const json = JSON.parse(trimmed);
+    const pattern =
+      typeof json.pattern === "string" && json.pattern.trim()
+        ? json.pattern.trim()
+        : "(none)";
+    const matchMode =
+      typeof json.matchMode === "string" && json.matchMode
+        ? json.matchMode
+        : ContextMatcher.MATCH_MODE.EXACT;
+    caption.textContent = `From pasted JSON: ${pattern} (${matchMode})`;
+    showImportJsonError("");
+  } catch (_e) {
+    caption.textContent = "Paste JSON from a downloaded config file.";
+  }
+}
+
+function openImportConfirmPanel() {
+  const panel = document.getElementById("import-confirm-panel");
+  const caption = document.getElementById("import-source-caption");
+  const patternInput = document.getElementById("import-pattern-input");
+  const matchModeInput = document.getElementById("import-match-mode");
+  const jsonInput = document.getElementById("import-json-input");
+  if (!panel || !patternInput || !matchModeInput) return;
+
+  const defaultPattern = ContextMatcher.canonicalPattern(activeTabUrl);
+  const defaultMode = ContextMatcher.MATCH_MODE.EXACT;
+
+  resetImportInputs();
+  if (caption) {
+    caption.textContent = "Paste JSON from a downloaded config file.";
+  }
+
+  patternInput.value = defaultPattern || "";
+  matchModeInput.value = defaultMode;
+  showImportPatternError("");
+
+  panel.style.display = "block";
+  requestAnimationFrame(() => {
+    autoSizeImportPatternInput();
+  });
+  if (jsonInput) {
+    jsonInput.focus();
+    panel.scrollIntoView({ block: "nearest" });
+  } else {
+    patternInput.focus();
+  }
+}
+
+function parseImportJsonText(text) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    return { ok: false, message: "Paste JSON configuration text first." };
+  }
+  try {
+    const json = JSON.parse(trimmed);
+    return {
+      ok: true,
+      customSelectors: Array.isArray(json.customSelectors) ? json.customSelectors : [],
+      customVars: Array.isArray(json.customVars) ? json.customVars : [],
+    };
+  } catch (err) {
+    return { ok: false, message: "Invalid JSON. Check the pasted text and try again." };
+  }
+}
+
 document.getElementById("export-config-btn").addEventListener("click", async () => {
   const entries = await getStorageContexts();
   const state = getCurrentContextFormState();
@@ -1777,66 +1896,85 @@ document.getElementById("export-config-btn").addEventListener("click", async () 
   URL.revokeObjectURL(url);
 });
 
-document.getElementById("import-config-input").addEventListener("change", (e) => {
-  const input = e.target;
-  const file = input.files && input.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const json = JSON.parse(reader.result);
-      const customSelectors = Array.isArray(json.customSelectors) ? json.customSelectors : [];
-      const customVars = Array.isArray(json.customVars) ? json.customVars : [];
-      const state = getCurrentContextFormState();
-      const importedPattern = typeof json.pattern === "string" && json.pattern.trim()
-        ? json.pattern.trim()
-        : state.pattern;
-      const importedMatchMode = typeof json.matchMode === "string" && json.matchMode
-        ? json.matchMode
-        : state.matchMode;
-      const importedCanonical = ContextMatcher.canonicalPattern(importedPattern);
-      const currentCanonical = ContextMatcher.canonicalPattern(state.pattern || activeTabUrl);
-      const shouldMapToCurrentContext =
-        !!currentCanonical && !!importedCanonical && importedCanonical !== currentCanonical;
-      const pattern = shouldMapToCurrentContext ? currentCanonical : importedPattern;
-      const matchMode = shouldMapToCurrentContext ? state.matchMode : importedMatchMode;
-      const validation = ContextMatcher.validateContextPattern(pattern, matchMode);
-      if (!validation.ok) {
-        showContextPatternError(validation.message || "Imported context pattern is invalid.");
-        input.value = "";
-        return;
-      }
-
-      getStorageContexts().then((entries) => {
-        const entriesWithoutCurrent = activeContextEntryId
-          ? entries.filter((entry) => entry && entry.id !== activeContextEntryId)
-          : entries;
-        const nextEntries = ContextMatcher.saveContextEntry(entriesWithoutCurrent, {
-          id: activeContextEntryId || undefined,
-          pattern,
-          matchMode,
-          customSelectors,
-          customVars,
-        });
-        setStorageContexts(nextEntries, () => {
-          const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
-          activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : activeContextEntryId;
-          setCurrentContextFormState(pattern, matchMode);
-          showContextPatternError("");
-          renderCustomRules(customSelectors);
-          renderCustomVars(customVars);
-          input.value = "";
-          lastSavedStateToken = getCurrentStateToken();
-        });
-      });
-    } catch (err) {
-      console.error("Failed to parse config JSON", err);
-      input.value = "";
-    }
-  };
-  reader.readAsText(file);
+document.getElementById("open-import-btn").addEventListener("click", () => {
+  openImportConfirmPanel();
 });
+
+document.getElementById("import-confirm-btn").addEventListener("click", async () => {
+  const jsonInput = document.getElementById("import-json-input");
+  const patternInput = document.getElementById("import-pattern-input");
+  const matchModeInput = document.getElementById("import-match-mode");
+  if (!jsonInput || !patternInput || !matchModeInput) return;
+
+  const parsed = parseImportJsonText(jsonInput.value);
+  if (!parsed.ok) {
+    showImportJsonError(parsed.message);
+    return;
+  }
+  showImportJsonError("");
+
+  const pattern = patternInput.value.trim();
+  const matchMode = matchModeInput.value || ContextMatcher.MATCH_MODE.EXACT;
+  const validation = ContextMatcher.validateContextPattern(pattern, matchMode);
+  if (!validation.ok) {
+    showImportPatternError(validation.message || "Context URL pattern is invalid.");
+    return;
+  }
+
+  const { customSelectors, customVars } = parsed;
+  const entries = await getStorageContexts();
+  const nextEntries = ContextMatcher.saveContextEntry(entries, {
+    pattern,
+    matchMode,
+    customSelectors,
+    customVars,
+  });
+
+  setStorageContexts(nextEntries, () => {
+    const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
+    activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : null;
+    setCurrentContextFormState(pattern, matchMode);
+    showContextPatternError("");
+    renderCustomRules(customSelectors);
+    renderCustomVars(customVars);
+    resetImportInputs();
+    hideImportConfirmPanel();
+    lastSavedStateToken = getCurrentStateToken();
+  });
+});
+
+document.getElementById("import-cancel-btn").addEventListener("click", () => {
+  resetImportInputs();
+  hideImportConfirmPanel();
+});
+
+const importJsonInput = document.getElementById("import-json-input");
+const importPatternInput = document.getElementById("import-pattern-input");
+const importMatchModeInput = document.getElementById("import-match-mode");
+
+if (importJsonInput) {
+  importJsonInput.addEventListener("input", () => {
+    updateImportSourceCaptionFromJson(importJsonInput.value);
+  });
+}
+
+if (importPatternInput) {
+  importPatternInput.addEventListener("input", () => {
+    autoSizeImportPatternInput();
+    const pattern = importPatternInput.value.trim();
+    const matchMode = importMatchModeInput ? importMatchModeInput.value : ContextMatcher.MATCH_MODE.EXACT;
+    const valid = ContextMatcher.validateContextPattern(pattern, matchMode);
+    showImportPatternError(valid.ok ? "" : valid.message);
+  });
+}
+if (importMatchModeInput) {
+  importMatchModeInput.addEventListener("change", () => {
+    const pattern = importPatternInput ? importPatternInput.value.trim() : "";
+    const matchMode = importMatchModeInput.value;
+    const valid = ContextMatcher.validateContextPattern(pattern, matchMode);
+    showImportPatternError(valid.ok ? "" : valid.message);
+  });
+}
 
 async function verifySelectorField(selectorInput, errorDiv) {
   if (!selectorInput || !errorDiv) return false;

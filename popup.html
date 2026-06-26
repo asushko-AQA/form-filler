@@ -236,6 +236,22 @@
       resize: none;
       overflow: hidden;
       line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    #import-confirm-panel .import-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: stretch;
+    }
+    #import-confirm-panel .import-actions .save-btn,
+    #import-confirm-panel .import-actions .scan-btn {
+      flex: 1;
+      margin-bottom: 0;
+      min-height: 36px;
+      box-sizing: border-box;
     }
 
     .save-btn {
@@ -280,7 +296,7 @@
       <div class="subtitle">smart form filler</div>
     </div>
   </div>
-  <span class="badge">v1.0</span>
+  <span class="badge">v1.3.0</span>
 </div>
 
 <div class="tabs">
@@ -393,10 +409,7 @@
 
   <div style="display:flex; gap:8px; margin-top:10px;">
     <button class="scan-btn" id="export-config-btn" style="flex:1;">Download JSON</button>
-    <label class="scan-btn" id="import-config-label" style="flex:1; text-align:center; cursor:pointer;">
-      Upload JSON
-      <input type="file" id="import-config-input" accept="application/json" style="display:none;" />
-    </label>
+    <button class="scan-btn" id="open-import-btn" style="flex:1;">Upload JSON</button>
   </div>
 
   <div class="saved-toast" id="saved-toast">✓ Saved successfully</div>
@@ -407,6 +420,27 @@
       <button class="save-btn" id="close-confirm-save" style="flex:1;">Save &amp; Close</button>
       <button class="scan-btn" id="close-confirm-discard" style="flex:1;">Leave without saving</button>
       <button class="scan-btn" id="close-confirm-cancel" style="flex:1;">Cancel</button>
+    </div>
+  </div>
+
+  <div class="hint" id="import-confirm-panel" style="margin-top:10px; display:none;">
+    <div><strong>Import configuration</strong></div>
+    <div style="margin-top:8px; font-size:11px;">Paste exported JSON below:</div>
+    <textarea id="import-json-input" class="config-input" placeholder='{"pattern":"...","matchMode":"exact","customSelectors":[],"customVars":[]}' style="margin-top:4px; min-height:80px; max-height:160px; resize:vertical; font-family:monospace; font-size:11px;"></textarea>
+    <div id="import-json-error" style="margin-top:4px;font-size:11px;color:#f97373;display:none;"></div>
+    <div id="import-source-caption" style="margin-top:6px; font-size:11px; opacity:0.85;"></div>
+    <div style="margin-top:8px; font-size:11px;">Context URL pattern for this import:</div>
+    <textarea id="import-pattern-input" class="config-input context-pattern-area" placeholder="my-site.com/* or my-site.com/users/*/data" style="margin-top:4px;"></textarea>
+    <select id="import-match-mode" class="config-input" style="margin-top:6px;">
+      <option value="exact">Exact (strict)</option>
+      <option value="prefix">Prefix</option>
+      <option value="wildcard">Wildcard (*)</option>
+      <option value="pathSegmentWildcard">Path segment wildcard (*)</option>
+    </select>
+    <div id="import-pattern-error" style="margin-top:4px;font-size:11px;color:#f97373;display:none;"></div>
+    <div class="import-actions">
+      <button class="save-btn" id="import-confirm-btn">Import</button>
+      <button class="scan-btn" id="import-cancel-btn">Cancel</button>
     </div>
   </div>
 
