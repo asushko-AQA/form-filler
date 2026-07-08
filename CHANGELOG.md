@@ -2,12 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased 1.x.x] — started 2026-03-09
+
+## 1.3.1 — 2026-07-08
+
+- Per-entry `chrome.storage.local` storage with one-time migration from sync, fixing silent save failures when five or more context configurations exceeded Chrome sync storage's 8 KB per-item limit.
+- Save and import now surface storage errors instead of updating the UI when persistence fails.
+
 ## 1.3.0 — 2026-06-26
 
 - JSON import uses pasted JSON in the popup with an editable context URL pattern and match mode, fixing the popup closing when selecting a file on Linux/Chromium.
 - Expanded random first-name and last-name pools from 10 to 60 entries each, giving more variety when filling forms with `randomFirstName` / `randomLastName` custom variables.
-
-## [Unreleased 1.x.x] — started 2026-03-09
 
 ## 1.2.2 — 2026-03-19
 

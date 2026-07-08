@@ -100,7 +100,7 @@ The extension no longer tries to infer or auto-map values based on attribute nam
 - Works with **React, Angular, Vue** — uses native input value setters to trigger synthetic events.
 - Handles `<input>`, `<textarea>`, `<select>`, and many select-like widgets (via ARIA roles and common CSS classes).
 - Re-injects the floating button on SPA navigation (MutationObserver).
-- All configuration (rules and variables) is persisted via `chrome.storage.sync`.
+- All configuration (rules and variables) is persisted via `chrome.storage.local`, with one context entry per storage key. Existing data in `chrome.storage.sync` is migrated automatically on first read.
 
 ---
 

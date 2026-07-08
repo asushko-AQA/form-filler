@@ -88,7 +88,7 @@ Short description: Rules are validated for non‑empty selectors, non‑empty va
 
 ### Feature: Per‑Context Saving of Custom Rules
 
-Short description: Saving custom rules persists them per URL (without hash) using Chrome sync storage.
+Short description: Saving custom rules persists them per URL (without hash) using Chrome local storage.
 
 - [ ] On Page A, define at least one custom rule and click **Save Custom Setup**; close and reopen the popup on the same page and verify the rule is restored.
 - [ ] Open a different page (Page B) with a different URL, open the popup, and confirm that Page A’s rules are **not** shown by default.
@@ -282,12 +282,19 @@ Short description: Upload a JSON file to replace the current context’s custom 
 - [ ] Modify the imported JSON to add or remove rules and variables, import again, and verify the popup reflects the new configuration.
 - [ ] Attempt to import blatantly invalid JSON (e.g. a text file); confirm that parsing failures are handled gracefully (e.g. console error, input reset) and the existing configuration is not silently corrupted.
 
-### Feature: Chrome Sync Storage Scope
+### Feature: Local Storage Scope
 
-Short description: Use `chrome.storage.sync` to persist configs across browser restarts and machines (subject to Chrome sync).
+Short description: Use `chrome.storage.local` to persist configs per browser profile (one context entry per key, with automatic migration from legacy sync blobs).
 
-- [ ] After saving custom rules/vars for a context, restart the browser and revisit the same URL; verify that the configuration is restored from sync storage.
-- [ ] (If Chrome account sync is enabled) Install the extension on a second profile/machine, sign into the same account, and verify that saved configurations appear there as well (TBD depending on sync setup).
+- [ ] After saving custom rules/vars for a context, restart the browser and revisit the same URL; verify that the configuration is restored from local storage.
+- [ ] In DevTools → Application → Extension storage, confirm each context appears under its own `contextEntry:<id>` key plus a `contextEntryIds` index (not a single large `contextEntries` blob).
+- [ ] Import or save **5 or more** distinct context configurations, close and reopen the popup, and verify all contexts persist (regression for the former sync 8 KB per-item limit).
+
+### Feature: Storage Save Error Handling
+
+Short description: Failed saves (e.g. quota exceeded on a single oversized entry) show an error instead of claiming success.
+
+- [ ] If a save fails, confirm an error message appears (saved toast or import panel) and the UI does not hide the import panel or update `lastSavedStateToken` as if the save succeeded.
 
 ## Regression Checklist – Form Filling Core
 

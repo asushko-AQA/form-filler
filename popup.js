@@ -50,31 +50,25 @@ function showContextPatternError(message) {
   errorEl.style.display = "block";
 }
 
-function buildLegacyContextMap(entries) {
-  const map = {};
-  (Array.isArray(entries) ? entries : []).forEach((entry) => {
-    if (!entry || entry.matchMode !== ContextMatcher.MATCH_MODE.EXACT) return;
-    map[entry.pattern] = {
-      customSelectors: Array.isArray(entry.customSelectors) ? entry.customSelectors : [],
-      customVars: Array.isArray(entry.customVars) ? entry.customVars : [],
-    };
-  });
-  return map;
-}
-
-function getStorageContexts() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(["contextEntries", "contextConfigs"], (res) => {
-      const entries = ContextMatcher.normalizeStoredContexts(res || {});
-      resolve(entries);
-    });
-  });
-}
-
-function setStorageContexts(entries, cb) {
-  const contextEntries = Array.isArray(entries) ? entries : [];
-  const contextConfigs = buildLegacyContextMap(contextEntries);
-  chrome.storage.sync.set({ contextEntries, contextConfigs }, cb);
+function showStorageSaveError(message, useImportPanel) {
+  const text =
+    message || "Could not save configuration (storage limit). Try removing unused contexts.";
+  if (useImportPanel) {
+    showImportPatternError(text);
+    return;
+  }
+  const toast = document.getElementById("saved-toast");
+  if (!toast) return;
+  const originalText = toast.textContent;
+  const originalColor = toast.style.color;
+  toast.textContent = text;
+  toast.style.color = "#f97373";
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+    toast.textContent = originalText;
+    toast.style.color = originalColor || "";
+  }, 3500);
 }
 
 async function sendToContent(msg) {
@@ -973,7 +967,7 @@ document.getElementById("popup-fill-btn").addEventListener("click", async () => 
 
   const tab = await getActiveTab();
   const url = tab && tab.url ? tab.url : "";
-  const entries = await getStorageContexts();
+  const entries = await StorageContext.getStorageContexts();
   const ctx = ContextMatcher.pickBestContextEntry(entries, url) || {};
   const customSelectors = Array.isArray(ctx.customSelectors) ? ctx.customSelectors : [];
   const customVars = Array.isArray(ctx.customVars) ? ctx.customVars : [];
@@ -1119,7 +1113,7 @@ document.getElementById("scan-btn").addEventListener("click", async () => {
 (async () => {
   const tab = await getActiveTab();
   activeTabUrl = tab && tab.url ? tab.url : "";
-  const entries = await getStorageContexts();
+  const entries = await StorageContext.getStorageContexts();
   const ctx = ContextMatcher.pickBestContextEntry(entries, activeTabUrl);
   const defaultPattern = ContextMatcher.canonicalPattern(activeTabUrl);
   const defaultMode = ContextMatcher.MATCH_MODE.EXACT;
@@ -1616,8 +1610,7 @@ async function saveCustomSetup(showToast) {
     return;
   }
   showContextPatternError("");
-  lastSavedStateToken = JSON.stringify({ rules, vars, contextState });
-  const entries = await getStorageContexts();
+  const entries = await StorageContext.getStorageContexts();
   const entriesWithoutCurrent = activeContextEntryId
     ? entries.filter((entry) => entry && entry.id !== activeContextEntryId)
     : entries;
@@ -1631,28 +1624,33 @@ async function saveCustomSetup(showToast) {
   const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
   activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : activeContextEntryId;
 
-  setStorageContexts(nextEntries, () => {
-      // After a successful save, treat all rules as inactive so the next edit
-      // session starts with an explicit activation.
-      clearActiveRuleRow();
-      lastLinkedRuleRow = null;
-      // Refresh UI (custom vars + pills) immediately from current in-memory data.
-      // Selectors are left as-is to avoid unnecessary redraw/focus loss.
-      renderCustomVars(vars);
+  StorageContext.setStorageContexts(nextEntries, (result) => {
+    if (!result || !result.ok) {
+      showStorageSaveError(result && result.error);
+      return;
+    }
+    lastSavedStateToken = JSON.stringify({ rules, vars, contextState });
+    // After a successful save, treat all rules as inactive so the next edit
+    // session starts with an explicit activation.
+    clearActiveRuleRow();
+    lastLinkedRuleRow = null;
+    // Refresh UI (custom vars + pills) immediately from current in-memory data.
+    // Selectors are left as-is to avoid unnecessary redraw/focus loss.
+    renderCustomVars(vars);
 
-      if (showToast) {
-        const toast = document.getElementById("saved-toast");
-        if (toast) {
-          const original = toast.textContent;
-          toast.textContent = "✓ Custom rules saved";
-          toast.classList.add("show");
-          setTimeout(() => {
-            toast.classList.remove("show");
-            toast.textContent = original;
-          }, 2000);
-        }
+    if (showToast) {
+      const toast = document.getElementById("saved-toast");
+      if (toast) {
+        const original = toast.textContent;
+        toast.textContent = "✓ Custom rules saved";
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          toast.textContent = original;
+        }, 2000);
       }
-    });
+    }
+  });
 }
 
 function getCurrentStateToken() {
@@ -1867,7 +1865,7 @@ function parseImportJsonText(text) {
 }
 
 document.getElementById("export-config-btn").addEventListener("click", async () => {
-  const entries = await getStorageContexts();
+  const entries = await StorageContext.getStorageContexts();
   const state = getCurrentContextFormState();
   const ctx =
     ContextMatcher.pickBestContextEntry(entries, activeTabUrl) ||
@@ -1922,7 +1920,7 @@ document.getElementById("import-confirm-btn").addEventListener("click", async ()
   }
 
   const { customSelectors, customVars } = parsed;
-  const entries = await getStorageContexts();
+  const entries = await StorageContext.getStorageContexts();
   const nextEntries = ContextMatcher.saveContextEntry(entries, {
     pattern,
     matchMode,
@@ -1930,7 +1928,11 @@ document.getElementById("import-confirm-btn").addEventListener("click", async ()
     customVars,
   });
 
-  setStorageContexts(nextEntries, () => {
+  StorageContext.setStorageContexts(nextEntries, (result) => {
+    if (!result || !result.ok) {
+      showStorageSaveError(result && result.error, true);
+      return;
+    }
     const savedEntry = ContextMatcher.pickBestContextEntry(nextEntries, activeTabUrl);
     activeContextEntryId = savedEntry && savedEntry.id ? savedEntry.id : null;
     setCurrentContextFormState(pattern, matchMode);

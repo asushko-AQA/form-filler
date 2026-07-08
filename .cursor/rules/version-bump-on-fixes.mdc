@@ -1,0 +1,26 @@
+---
+description: Bump PATCH version, popup badge fallback, and CHANGELOG for non-trivial bug fixes and small feature patches before commit
+alwaysApply: true
+---
+
+# Version bump on fixes
+
+For any **non-trivial bug fix or small feature patch** (not doc-only typos or comment-only edits):
+
+1. **Bump the PATCH version** in `manifest.json` (e.g. `1.3.0` → `1.3.1`).
+2. **Update the static badge fallback** in `popup.html` to match (e.g. `v1.3.1`). The popup also reads the version from the manifest at runtime; keep both in sync.
+3. **Add a `CHANGELOG.md` entry** under a new `## X.Y.Z — YYYY-MM-DD` section before commit, following existing style. Move bullets from `[Unreleased]` into the new version section when they describe shipped work.
+
+**When to bump**
+
+- Bug fixes that change runtime behavior.
+- Small feature patches or UX improvements that ship to users.
+- Storage, fill, import/export, or popup logic changes.
+
+**When not to bump**
+
+- Documentation-only edits (README, TESTS.md) with no code change.
+- Trivial typo fixes in comments or markdown.
+- Internal tooling or `.cursor/` config that does not affect the extension build.
+
+Coordinate with **changelog-discipline**: the changelog entry and version bump should land together as part of the same change set, before commit.
