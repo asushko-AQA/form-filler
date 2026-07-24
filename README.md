@@ -18,8 +18,9 @@ You define pairs of **CSS selector → value template**, and the extension fills
 ## 🚀 How to Use
 
 ### Option A — Floating button on the page
-If you have custom rules configured for the current page, a purple **\"Auto Fill\"** button appears in the bottom-right corner.  
-Click it to run your rules and fill matching fields.
+If you have custom rules configured for the current page, a purple **\"Auto Fill\"** button is injected on the page (bottom-right by default).  
+On the popup **Fill** tab you can choose its corner (bottom-right, bottom-left, top-right, top-left) and set edge gaps in pixels for the relevant sides.  
+Click the button to run your rules and fill matching fields.
 
 ### Option B — Extension popup
 Click the extension icon in Chrome's toolbar. The popup has three main areas:

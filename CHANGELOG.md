@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased 1.x.x] — started 2026-03-09
 
+## 1.3.2 — 2026-07-24
+
+- Floating **Auto Fill** button corner can be chosen from the popup Fill tab (bottom-right, bottom-left, top-right, top-left).
+- Edge gap controls show only the sides relevant to the chosen corner (e.g. bottom + right for bottom-right); values persist in `chrome.storage.local` and update the on-page button immediately when it is already injected.
+
 ## 1.3.1 — 2026-07-08
 
 - Per-entry `chrome.storage.local` storage with one-time migration from sync, fixing silent save failures when five or more context configurations exceeded Chrome sync storage's 8 KB per-item limit.
