@@ -1,3 +1,22 @@
+// Shared UI logic for popup and side panel shells (see popup.html / sidepanel.html).
+function detectUiShellFromPage() {
+  const path =
+    typeof location !== "undefined" && location.pathname ? location.pathname : "";
+  if (/popup\.html$/i.test(path)) {
+    return { mode: "popup", tabSync: false };
+  }
+  if (/sidepanel\.html$/i.test(path)) {
+    return { mode: "sidepanel", tabSync: true };
+  }
+  return { mode: "sidepanel", tabSync: true };
+}
+
+const AFF_UI = Object.assign(
+  detectUiShellFromPage(),
+  typeof window !== "undefined" && window.AFF_UI ? window.AFF_UI : {}
+);
+const isPopupUi = AFF_UI.mode === "popup";
+
 // ── Tab switching ─────────────────────────────
 
 document.querySelectorAll(".tab").forEach((tab) => {
@@ -692,10 +711,10 @@ function renderCustomVars(vars) {
   const pills = document.getElementById("custom-vars-pills");
   if (!container) return;
 
+  const userVars = Array.isArray(vars) ? vars : [];
+
   container.innerHTML = "";
   if (pills) pills.innerHTML = "";
-
-  const userVars = Array.isArray(vars) ? vars : [];
 
   // Merge built-in vars with user-defined ones for suggestions (user vars override by key)
   const mergedByKey = {};
@@ -960,8 +979,8 @@ function renderCustomVars(vars) {
 
 // ── Fill button ───────────────────────────────
 
-document.getElementById("popup-fill-btn").addEventListener("click", async () => {
-  const btn = document.getElementById("popup-fill-btn");
+document.getElementById("fill-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("fill-btn");
   btn.disabled = true;
   btn.textContent = "Filling…";
 
@@ -1185,9 +1204,32 @@ document.getElementById("scan-btn").addEventListener("click", async () => {
 
 // ── Custom: load saved rules/vars for context ─
 
-(async () => {
+function formatActiveTabLabel(url) {
+  if (!url) return "No active tab";
+  if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
+    return url.replace(/^[^:]+:\/\//, "");
+  }
+  try {
+    const parsed = new URL(url);
+    return `${parsed.hostname}${parsed.pathname}${parsed.search || ""}`;
+  } catch (_e) {
+    return url;
+  }
+}
+
+function updateActiveTabHeader(url) {
+  const el = document.getElementById("active-tab-url");
+  if (!el) return;
+  const label = formatActiveTabLabel(url);
+  el.textContent = label;
+  el.title = url || "";
+}
+
+async function reloadContextForActiveTab() {
   const tab = await getActiveTab();
   activeTabUrl = tab && tab.url ? tab.url : "";
+  updateActiveTabHeader(activeTabUrl);
+
   const entries = await StorageContext.getStorageContexts();
   const ctx = ContextMatcher.pickBestContextEntry(entries, activeTabUrl);
   const defaultPattern = ContextMatcher.canonicalPattern(activeTabUrl);
@@ -1203,7 +1245,30 @@ document.getElementById("scan-btn").addEventListener("click", async () => {
   renderCustomRules(loadedRules);
   renderCustomVars(loadedVars);
   lastSavedStateToken = getCurrentStateToken();
-})();
+}
+
+reloadContextForActiveTab();
+
+if (!isPopupUi && AFF_UI.tabSync !== false && chrome.tabs) {
+  if (chrome.tabs.onActivated) {
+    chrome.tabs.onActivated.addListener(() => {
+      reloadContextForActiveTab();
+    });
+  }
+
+  if (chrome.tabs.onUpdated) {
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+      if (!changeInfo.url) return;
+      getActiveTab().then((tab) => {
+        if (tab && tab.id === tabId) reloadContextForActiveTab();
+      });
+    });
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) reloadContextForActiveTab();
+  });
+}
 
 // ── Custom selectors: add/save ────────────────
 
@@ -1632,7 +1697,7 @@ document.getElementById("add-custom-var-btn").addEventListener("click", () => {
   setActiveRuleRow(wrap);
 });
 
-// Close any open options menu when clicking elsewhere in the popup
+// Close any open options menu when clicking elsewhere in the panel
 document.addEventListener("click", () => {
   hideAllOptionMenus();
 });
@@ -1786,37 +1851,41 @@ document.getElementById("save-custom-rules-btn").addEventListener("click", async
   saveCustomSetup(true);
 });
 
-// Close / Save-or-leave confirmation
-document.getElementById("close-popup-btn").addEventListener("click", () => {
-  const panel = document.getElementById("close-confirm-panel");
-  if (!panel) {
-    window.close();
-    return;
+if (isPopupUi) {
+  const closeBtn = document.getElementById("close-popup-btn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      const panel = document.getElementById("close-confirm-panel");
+      if (!panel) {
+        window.close();
+        return;
+      }
+      if (!hasUnsavedChanges()) {
+        window.close();
+        return;
+      }
+      panel.style.display = "block";
+    });
   }
-  if (!hasUnsavedChanges()) {
+
+  document.getElementById("close-confirm-cancel")?.addEventListener("click", () => {
+    const panel = document.getElementById("close-confirm-panel");
+    if (panel) panel.style.display = "none";
+  });
+
+  document.getElementById("close-confirm-discard")?.addEventListener("click", () => {
     window.close();
-    return;
-  }
-  panel.style.display = "block";
-});
+  });
 
-document.getElementById("close-confirm-cancel").addEventListener("click", () => {
-  const panel = document.getElementById("close-confirm-panel");
-  if (panel) panel.style.display = "none";
-});
-
-document.getElementById("close-confirm-discard").addEventListener("click", () => {
-  window.close();
-});
-
-document.getElementById("close-confirm-save").addEventListener("click", async () => {
-  const panel = document.getElementById("close-confirm-panel");
-  const { ok } = await validateActiveRule();
-  if (!ok) return;
-  await saveCustomSetup(true);
-  if (panel) panel.style.display = "none";
-  window.close();
-});
+  document.getElementById("close-confirm-save")?.addEventListener("click", async () => {
+    const panel = document.getElementById("close-confirm-panel");
+    const { ok } = await validateActiveRule();
+    if (!ok) return;
+    await saveCustomSetup(true);
+    if (panel) panel.style.display = "none";
+    window.close();
+  });
+}
 
 // ── Import / export config as JSON ─────────────
 
@@ -2265,12 +2334,18 @@ if (contextMatchModeInput) {
       return;
     }
 
-    // If the popup window itself still has focus, treat this as an internal
-    // focus move and do not autosave. When the user clicks outside the popup
-    // or changes tab/window, document.hasFocus() becomes false and autosave
-    // will be allowed.
+    // Popup: autosave when focus leaves the popup window.
+    // Side panel: autosave when focus moves to the page or another extension tab.
     if (document.hasFocus && document.hasFocus()) {
-      return;
+      if (isPopupUi) {
+        return;
+      }
+      const nextTab = nextActive && nextActive.closest
+        ? nextActive.closest(".panel")
+        : null;
+      if (!nextTab || nextTab.id === "tab-custom") {
+        return;
+      }
     }
 
     if (autosaveTimeout) clearTimeout(autosaveTimeout);
@@ -2337,3 +2412,107 @@ if (contextMatchModeInput) {
     group.insertAdjacentElement("afterend", pills);
   });
 })();
+
+// ── Toolbar UI mode (popup vs side panel) ─────
+
+(function setupUiModeSelector() {
+  const toggle = document.getElementById("ui-mode-toggle");
+  const labelSide = document.getElementById("ui-mode-label-sidepanel");
+  const labelPopup = document.getElementById("ui-mode-label-popup");
+  const switchBtn = document.getElementById("ui-mode-switch");
+  const hint = document.getElementById("ui-mode-hint");
+  if (!toggle || !StorageContext.getUiMode) return;
+
+  let currentMode = StorageContext.UI_MODES.SIDE_PANEL;
+
+  function updateHint(mode) {
+    if (!hint) return;
+    hint.innerHTML =
+      mode === StorageContext.UI_MODES.POPUP
+        ? "Side panel closes when you switch here. Next toolbar click opens the popup."
+        : "Popup closes when you switch here. Next toolbar click opens the side panel.";
+  }
+
+  function setToggleVisual(mode) {
+    const isPopup = mode === StorageContext.UI_MODES.POPUP;
+    toggle.classList.toggle("is-popup", isPopup);
+    if (labelSide) labelSide.classList.toggle("active", !isPopup);
+    if (labelPopup) labelPopup.classList.toggle("active", isPopup);
+  }
+
+  function applyUiModeChange(mode) {
+    const switchingToPopup =
+      mode === StorageContext.UI_MODES.POPUP && !isPopupUi;
+    const switchingToSidePanel =
+      mode === StorageContext.UI_MODES.SIDE_PANEL && isPopupUi;
+
+    const sendApply = (windowId) => {
+      chrome.runtime.sendMessage(
+        { action: "applyUiMode", mode, windowId },
+        () => {
+          if (switchingToSidePanel) {
+            window.close();
+            return;
+          }
+          if (switchingToPopup) {
+            window.close();
+          }
+        }
+      );
+    };
+
+    if (switchingToPopup && chrome.windows && chrome.windows.getCurrent) {
+      chrome.windows.getCurrent((win) => {
+        sendApply(win && win.id != null ? win.id : undefined);
+      });
+      return;
+    }
+
+    sendApply(undefined);
+  }
+
+  function commitMode(mode) {
+    const normalized = normalizeUiModeSelectValue(mode);
+    if (normalized === currentMode) return;
+
+    StorageContext.setUiMode(normalized, (result) => {
+      if (!result.ok) return;
+      currentMode = normalized;
+      setToggleVisual(normalized);
+      updateHint(normalized);
+      applyUiModeChange(normalized);
+    });
+  }
+
+  StorageContext.getUiMode().then((mode) => {
+    currentMode = mode;
+    setToggleVisual(mode);
+    updateHint(mode);
+  });
+
+  if (labelSide) {
+    labelSide.addEventListener("click", () => {
+      commitMode(StorageContext.UI_MODES.SIDE_PANEL);
+    });
+  }
+  if (labelPopup) {
+    labelPopup.addEventListener("click", () => {
+      commitMode(StorageContext.UI_MODES.POPUP);
+    });
+  }
+  if (switchBtn) {
+    switchBtn.addEventListener("click", () => {
+      const next =
+        currentMode === StorageContext.UI_MODES.POPUP
+          ? StorageContext.UI_MODES.SIDE_PANEL
+          : StorageContext.UI_MODES.POPUP;
+      commitMode(next);
+    });
+  }
+})();
+
+function normalizeUiModeSelectValue(value) {
+  return value === StorageContext.UI_MODES.POPUP
+    ? StorageContext.UI_MODES.POPUP
+    : StorageContext.UI_MODES.SIDE_PANEL;
+}

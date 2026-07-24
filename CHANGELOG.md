@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased 1.x.x] — started 2026-03-09
 
+## 1.5.4 — 2026-07-24
+
+- Fixed **Fill Form Now** (side panel / popup) showing `!` / `?` stats instead of fill counts by returning `true` from the content script async `fill` message handler so `sendResponse` completes reliably.
+
+## 1.5.3 — 2026-07-24
+
+- Replaced the Toolbar UI dropdown with a **Side Panel ↔ Pop-Up** toggle switch (knob left = side panel, right = pop-up).
+
+## 1.5.2 — 2026-07-24
+
+- Switching **Toolbar UI** to Popup now closes the side panel immediately (`chrome.sidePanel.close` when available, otherwise `window.close()`); switching to Side panel closes an open popup the same way.
+
+## 1.5.1 — 2026-07-24
+
+- Fixed MV3 Content Security Policy errors by removing inline `window.AFF_UI` scripts; popup vs side panel mode is detected from the shell page URL in `app-core.js`.
+
+## 1.5.0 — 2026-07-24
+
+- **Unified UI:** one extension with a shared `app-core.js`; choose **Popup** or **Side panel** on the Fill tab (**Toolbar UI**). Preference persists in `chrome.storage.local` and applies on the next toolbar icon click.
+- Restored classic **popup** UI (`popup.html`) alongside the side panel shell; both share rules, variables, and storage.
+- Extracted shared logic into `app-core.js`; `background.js` switches `chrome.action.setPopup` / `chrome.sidePanel` behavior at startup and when the mode changes.
+
+## 1.4.1 — 2026-07-24
+
+- Fixed context resolution when the current URL path does not match a saved pattern but shares the same hostname (e.g. `/portal` now loads a config saved for `host/external/*`), restoring rules and variables in the side panel and for the floating fill button.
+
+## 1.4.0 — 2026-07-24
+
+- Replaced the toolbar **popup** with a Chrome **Side Panel** UI (Chrome 114+); clicking the extension icon docks the panel beside the page like Tag Assistant.
+- Side panel layout uses full height with taller field scan lists; the header shows the active tab URL and refreshes when you switch tabs or navigate.
+- Autosave on the Custom tab now runs when focus moves to the page or another extension tab, not when switching between controls inside the panel.
+- Removed the in-panel **Close** control and save-on-close flow (dismiss the panel via Chrome's side panel chrome).
+
 ## 1.3.2 — 2026-07-24
 
 - Floating **Auto Fill** button corner can be chosen from the popup Fill tab (bottom-right, bottom-left, top-right, top-left).

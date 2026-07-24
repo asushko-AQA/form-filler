@@ -19,14 +19,22 @@ You define pairs of **CSS selector → value template**, and the extension fills
 
 ### Option A — Floating button on the page
 If you have custom rules configured for the current page, a purple **\"Auto Fill\"** button is injected on the page (bottom-right by default).  
-On the popup **Fill** tab you can choose its corner (bottom-right, bottom-left, top-right, top-left) and set edge gaps in pixels for the relevant sides.  
+On the side panel **Fill** tab you can choose its corner (bottom-right, bottom-left, top-right, top-left) and set edge gaps in pixels for the relevant sides.  
 Click the button to run your rules and fill matching fields.
 
-### Option B — Extension popup
-Click the extension icon in Chrome's toolbar. The popup has three main areas:
+### Option B — Side panel or popup (your choice)
+Click the extension icon in Chrome's toolbar. On the **Fill** tab, use **Toolbar UI → Open extension as** to pick:
+- **Side panel** (default, Chrome 114+) — docked beside the page, stays open while you work.
+- **Popup** — classic compact window; closes when you click outside.
+
+The choice applies on the **next** toolbar click. Both modes share the same saved rules, variables, and contexts.
+
+The panel/popup has three main areas:
 - **Fill tab** → \"Fill Form Now\" button with **filled / skipped / total** stats for your custom rules.
 - **Fields tab** → Scan the current page by attribute (e.g. `data-automation-id`) to discover candidate elements and quickly create rules from them.
 - **Custom tab** → Define and manage your custom rules and variables.
+
+The header shows the active tab URL (side panel) and updates when you switch tabs.
 
 The extension **does not guess values automatically**. It only fills selectors and templates you define.
 
@@ -98,6 +106,7 @@ The extension no longer tries to infer or auto-map values based on attribute nam
 
 ## 🛠 Technical Notes
 
+- Requires **Chrome 114+** for the Side Panel API.
 - Works with **React, Angular, Vue** — uses native input value setters to trigger synthetic events.
 - Handles `<input>`, `<textarea>`, `<select>`, and many select-like widgets (via ARIA roles and common CSS classes).
 - Re-injects the floating button on SPA navigation (MutationObserver).

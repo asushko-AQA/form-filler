@@ -1,35 +1,57 @@
 ## Manual Test Coverage for AutoForm Filler
 
-This document describes **manual test coverage** for the current AutoForm Filler Chrome extension. It focuses on end‑to‑end behavior in the popup, injected page UI, and form‑filling logic driven by **explicit custom selector rules** (with `data-automation-id` used only for discovery, not for guessing values).
+This document describes **manual test coverage** for the current AutoForm Filler Chrome extension. It focuses on end‑to‑end behavior in the **side panel**, injected page UI, and form‑filling logic driven by **explicit custom selector rules** (with `data-automation-id` used only for discovery, not for guessing values).
 
-## Popup – Fill Tab
+**Requirements:** Chrome **114+** (Side Panel API).
 
-### Feature: Popup Header Version Badge
+## Side Panel – Fill Tab
 
-Short description: The popup header badge shows the current extension version from `manifest.json` (e.g. `v1.2.0`) and is non-clickable.
+### Feature: Side Panel Header Version Badge
 
-- [ ] With the extension loaded, open the popup and verify that the header version badge text matches `v<version>` where `<version>` is the `version` value from `manifest.json`.
-- [ ] Change the `version` in `manifest.json`, reload the extension in `chrome://extensions`, reopen the popup, and verify the header badge updates to show the new `v<version>` value.
-- [ ] Click the version badge in the popup header and confirm that nothing happens (no navigation, no new tabs, and no visible state change apart from normal focus behavior).
+Short description: The side panel header badge shows the current extension version from `manifest.json` (e.g. `v1.4.0`) and is non-clickable.
 
-### Feature: Fill Form from Popup
+- [ ] With the extension loaded, open the side panel and verify that the header version badge text matches `v<version>` where `<version>` is the `version` value from `manifest.json`.
+- [ ] Change the `version` in `manifest.json`, reload the extension in `chrome://extensions`, reopen the side panel, and verify the header badge updates to show the new `v<version>` value.
+- [ ] Click the version badge in the side panel header and confirm that nothing happens (no navigation, no new tabs, and no visible state change apart from normal focus behavior).
 
-Short description: Trigger a fill run for the active tab using the popup `Fill Form Now` button and show summary stats, based solely on configured custom selector rules.
+### Feature: Active Tab URL in Header
 
-- [ ] On a page where you have configured several custom selector rules (including text fields and select‑like widgets), open the popup and click **Fill Form Now**; verify that only fields covered by those rules are populated and that no unrelated fields are touched.
-- [ ] After a successful fill, verify that **Filled**, **Skipped**, and **Total** counters in the popup show non‑placeholder numeric values that roughly match the visible fields.
-- [ ] On a page with **no** matching `data-automation-id` fields, click **Fill Form Now** and verify that the stats show either `0` filled or special markers and do not crash the popup.
+Short description: The side panel header subtitle shows a truncated label for the active browser tab and updates when tabs change.
+
+- [ ] Open the side panel on a normal HTTPS page and verify the header subtitle shows hostname + path (not the full chrome:// URL).
+- [ ] Switch to another browser tab and confirm the subtitle updates to the new page within a short delay.
+- [ ] Navigate within the same tab (SPA or full reload) and confirm the subtitle updates when the URL changes.
+
+### Feature: Fill Form from Side Panel
+
+Short description: Trigger a fill run for the active tab using the side panel **Fill Form Now** button and show summary stats, based solely on configured custom selector rules.
+
+- [ ] On a page where you have configured several custom selector rules (including text fields and select‑like widgets), open the side panel and click **Fill Form Now**; verify that only fields covered by those rules are populated and that no unrelated fields are touched.
+- [ ] After a successful fill, verify that **Filled**, **Skipped**, and **Total** counters in the side panel show non‑placeholder numeric values that roughly match the visible fields.
+- [ ] On a page with **no** matching `data-automation-id` fields, click **Fill Form Now** and verify that the stats show either `0` filled or special markers and do not crash the side panel.
 - [ ] Confirm that repeated clicks on **Fill Form Now** continue to work without UI freezing, and stats update each time.
 - [ ] Verify that the fill button shows a temporary “Filling…” state (disabled) and returns to its normal label/icon afterward.
+
+### Feature: Toolbar UI Mode (Popup vs Side Panel)
+
+Short description: User can choose how the extension opens from the toolbar; both modes share the same storage.
+
+- [ ] On the Fill tab, confirm **Toolbar UI** shows **Side Panel** and **Pop-Up** labels with a sliding toggle between them (knob left = side panel, right = pop-up).
+- [ ] With **Side panel** selected, close the UI and click the toolbar icon; verify the side panel opens.
+- [ ] Switch from **Side panel** to **Popup** on the Fill tab and confirm the side panel closes immediately; the next toolbar click opens the popup.
+- [ ] Switch from **Popup** to **Side panel** and confirm the popup closes immediately; the next toolbar click opens the side panel.
+- [ ] With **Side panel** selected, close the UI and click the toolbar icon; verify the side panel opens.
+- [ ] Save custom rules in one mode, switch modes, reopen, and verify the same rules/vars load in both UIs.
+- [ ] Reload the extension and confirm the last selected UI mode is restored.
 
 ### Feature: Fill Entry Point Hint
 
 Short description: The Fill tab hints that a floating Auto Fill button may be injected on the page.
 
-- [ ] Open the popup on a page where custom selectors are configured (see Custom Rules feature) and confirm the hint text mentions the configurable floating **Auto Fill** button and corner/gap controls on the Fill tab.
+- [ ] Open the side panel on a page where custom selectors are configured (see Custom Rules feature) and confirm the hint text mentions the configurable floating **Auto Fill** button and corner/gap controls on the Fill tab.
 - [ ] On a fresh install or a page where no context config exists, confirm the hint text is still present and does not contradict actual behavior (mark specifics as **TBD** during first test run).
 
-## Popup – Fields Tab
+## Side Panel – Fields Tab
 
 ### Feature: Attribute‑Based Field Scan
 
@@ -51,11 +73,11 @@ Short description: Detected fields are visually classified as “known” or “
 
 Short description: Clicking a field in the scan results opens or updates a custom selector rule in the Custom tab.
 
-- [ ] From the Fields tab, run a search, then click a detected field item; verify that the popup switches to the **Custom** tab.
+- [ ] From the Fields tab, run a search, then click a detected field item; verify that the side panel switches to the **Custom** tab.
 - [ ] Confirm that a new custom rule row is created or updated with a selector matching the clicked field.
 - [ ] After the bridge, verify that the selector input is focused and visible, and that any previous error message for that rule is cleared.
 
-## Popup – Custom Tab: Selector Rules
+## Side Panel – Custom Tab: Selector Rules
 
 ### Feature: Custom Selector Rules CRUD
 
@@ -90,8 +112,8 @@ Short description: Rules are validated for non‑empty selectors, non‑empty va
 
 Short description: Saving custom rules persists them per URL (without hash) using Chrome local storage.
 
-- [ ] On Page A, define at least one custom rule and click **Save Custom Setup**; close and reopen the popup on the same page and verify the rule is restored.
-- [ ] Open a different page (Page B) with a different URL, open the popup, and confirm that Page A’s rules are **not** shown by default.
+- [ ] On Page A, define at least one custom rule and click **Save Custom Setup**; close and reopen the side panel on the same page and verify the rule is restored.
+- [ ] Open a different page (Page B) with a different URL, open the side panel, and confirm that Page A’s rules are **not** shown by default.
 - [ ] On Page B, create different rules, save them, then switch back to Page A and verify that Page A’s rules are still intact and independent.
 - [ ] On a single‑page application where the URL hash changes but the base URL remains the same, confirm that rules are shared across hash‑only navigations (TBD: confirm exact expected behavior).
 
@@ -107,7 +129,7 @@ Short description: Contexts can be matched using strict or weak URL pattern mode
 - [ ] Confirm hash-only URL changes (e.g. `#sectionA` to `#sectionB`) do not break context matching.
 - [ ] Export a config and verify the JSON includes `pattern` and `matchMode`; import it back and verify the same matching behavior is restored.
 
-## Popup – Custom Tab: Variables and Templates
+## Side Panel – Custom Tab: Variables and Templates
 
 ### Feature: Built‑In and Custom Variables
 
@@ -135,31 +157,23 @@ Short description: Custom selector rules use templates and variable values to bu
 - [ ] Define a custom rule whose value template uses `{{timestamp}}` and verify that repeated fills produce different, reasonable timestamp suffixes.
 - [ ] Define custom variables of type **Random first name** and **Random last name**, use them in a template, and confirm the filled value looks like a plausible name combination.
 
-## Custom Tab – Save, Close, and Autosave Behavior
+## Custom Tab – Save and Autosave Behavior
 
 ### Feature: Save Button Behavior and Toast
 
 Short description: Explicit saves persist custom rules/vars and show a success message.
 
 - [ ] With valid custom rules and variables configured, click **Save Custom Setup** and confirm a short success toast appears (e.g. “Custom rules saved”) and then fades away.
-- [ ] After saving, close and reopen the popup on the same page and verify all rules and variables are restored and function as expected when filling.
-
-### Feature: Unsaved Changes Close Confirmation
-
-Short description: Closing the popup with unsaved changes prompts the user to save, discard, or cancel.
-
-- [ ] Modify an existing rule or variable without saving and click **Close**; verify that a confirmation panel appears asking whether to Save & Close, Leave without saving, or Cancel.
-- [ ] Choose **Cancel** and confirm the popup remains open and unsaved changes are still present.
-- [ ] Choose **Leave without saving** and confirm the popup closes; when reopened, verify that previously saved values (not the unsaved edits) are shown.
-- [ ] Choose **Save & Close** and confirm changes are persisted and restored on the next open.
+- [ ] After saving, close and reopen the side panel on the same page and verify all rules and variables are restored and function as expected when filling.
 
 ### Feature: Autosave on Blur (Custom Tab)
 
-Short description: Under safe conditions, leaving the Custom tab triggers an autosave of valid changes.
+Short description: Under safe conditions, leaving the Custom tab or clicking into the page triggers an autosave of valid changes.
 
-- [ ] With a fully completed rule and variable configuration (no empty required fields), switch focus away from the popup (e.g. click into the page) and verify changes are saved without explicitly clicking **Save Custom Setup** (TBD: confirm exact trigger timing).
-- [ ] Start editing a new variable but leave its key or value empty, then blur the popup; confirm that autosave **does not** run while the variable is incomplete.
-- [ ] With an active rule that has validation errors, blur the popup and confirm those errors prevent autosave; no partial or invalid configuration should be saved.
+- [ ] With a fully completed rule and variable configuration (no empty required fields), click into the page beside the side panel and verify changes are saved without explicitly clicking **Save Custom Setup** (TBD: confirm exact trigger timing).
+- [ ] Switch from the **Custom** tab to **Fill** or **Fields** inside the side panel with valid unsaved changes and verify autosave runs (or confirm expected behavior — TBD on first run).
+- [ ] Start editing a new variable but leave its key or value empty, then click into the page; confirm that autosave **does not** run while the variable is incomplete.
+- [ ] With an active rule that has validation errors, click into the page and confirm those errors prevent autosave; no partial or invalid configuration should be saved.
 
 ## Injected Page UI and Form Filling
 
@@ -168,7 +182,7 @@ Short description: Under safe conditions, leaving the Custom tab triggers an aut
 Short description: Inject a floating Auto Fill button on pages that have context configurations and a ready DOM.
 
 - [ ] On a page where custom context configuration exists (custom selectors and/or vars), reload the page and verify that a floating **Auto Fill** button appears in the bottom‑right corner by default.
-- [ ] In the popup **Fill** tab, change the floating button corner (e.g. to bottom-left) and confirm the on-page button moves to that corner without a full reload when it is already visible.
+- [ ] In the side panel **Fill** tab, change the floating button corner (e.g. to bottom-left) and confirm the on-page button moves to that corner without a full reload when it is already visible.
 - [ ] With **bottom-right** selected, confirm only **Bottom gap** and **Right gap** inputs are shown; adjust them (e.g. bottom 48, right 12) and verify the button respects those offsets from the viewport edges.
 - [ ] Switch to **top-left** and confirm only **Top gap** and **Left gap** inputs appear; previous gap values for other sides are preserved when switching corners back.
 - [ ] Confirm the button styling is modern (gradient, rounded) and remains visible above page content due to a high `z-index`.
@@ -189,7 +203,7 @@ Short description: Clicking the injected button runs the same custom‑rule fill
 Short description: `data-automation-id` is used to **discover** fields and build selectors, but filling itself is controlled only by custom selector rules.
 
 - [ ] Using the Fields tab with `data-automation-id` as the search attribute, scan a page and confirm that results help you create or update custom selector rules in the Custom tab.
-- [ ] Run a fill with **no custom rules configured**, even on a page rich in `data-automation-id` attributes, and verify that no fields are filled and the popup/toast clearly reports zero filled without errors.
+- [ ] Run a fill with **no custom rules configured**, even on a page rich in `data-automation-id` attributes, and verify that no fields are filled and the side panel/injected toast clearly reports zero filled without errors.
 - [ ] After adding custom rules derived from those attributes, run a fill again and confirm that only fields matched by your selectors are filled; fields that merely have `data-automation-id` but no corresponding rules remain unchanged.
 
 ### Feature: Phone Country Code Select‑Like Dropdowns
@@ -219,7 +233,7 @@ Short description: Fill only text‑like and select inputs; skip unsupported typ
 
 Short description: Field fills are staggered with small delays between individual operations to avoid interaction issues, while preserving correct final values and UX.
 
-- [ ] On a typical multi‑field form (first/last name, email, phone, address, etc.), trigger a fill (popup or injected button) and visually confirm that fields appear to fill in sequence with a slight delay, but all expected fields end up correctly populated and the final **Filled/Skipped/Total** counts match the visible result.
+- [ ] On a typical multi‑field form (first/last name, email, phone, address, etc.), trigger a fill (side panel or injected button) and visually confirm that fields appear to fill in sequence with a slight delay, but all expected fields end up correctly populated and the final **Filled/Skipped/Total** counts match the visible result.
 - [ ] On a page with client‑side validation that fires on `input`/`change`/`blur`, run a fill and verify that:
   - No validation errors remain on required fields that the extension filled.
   - Any validation messages that appear while fields are filling resolve once the delayed filling completes.
@@ -227,7 +241,7 @@ Short description: Field fills are staggered with small delays between individua
   - The delayed filling does not get “ahead” of the DOM (no attempts to fill fields that are not yet present).
   - Newly mounted fields that match known patterns or custom selectors are eventually filled once they appear, or are clearly counted as skipped with logging if they cannot be reached.
 - [ ] While a fill is in progress, attempt light user interaction (scrolling, moving focus) and confirm there are no visible race conditions such as values being overwritten after manual edits, stalled toasts, or stuck loading states.
-- [ ] Run repeated fills on the same page and confirm that delays do not accumulate or cause the popup/injected button to remain disabled after completion.
+- [ ] Run repeated fills on the same page and confirm that delays do not accumulate or cause the side panel/injected button to remain disabled after completion.
 
 ### Feature: Logging and Diagnostics (Console)
 
@@ -264,9 +278,9 @@ Short description: Custom selector rules are applied in two passes: a first pass
   - Which selectors were filled on the first pass vs. second pass (TBD: exact labels/columns).
   - Which selectors failed after both passes, along with reasons (e.g. “element not found”, “element not typable”).
 - [ ] Confirm that selectors that fail even after the second pass are:
-  - Counted as **skipped** in the popup and injected toast summaries.
+  - Counted as **skipped** in the side panel and injected toast summaries.
   - Included in the total selector count so the user can reconcile the numbers.
-- [ ] Trigger fills from both the popup and the injected Auto Fill button and verify that both entry points await the full two‑pass process before showing final **Filled/Skipped/Total** counts and re‑enabling their UI controls.
+- [ ] Trigger fills from both the side panel and the injected Auto Fill button and verify that both entry points await the full two‑pass process before showing final **Filled/Skipped/Total** counts and re‑enabling their UI controls.
 
 ## Import/Export and Storage Behavior
 
@@ -282,7 +296,7 @@ Short description: Download a JSON file containing custom selectors and variable
 Short description: Upload a JSON file to replace the current context’s custom selectors and variables.
 
 - [ ] Start from a clean state, click **Upload JSON**, select a previously exported `autoform-config.json`, and confirm that rules and variables are rendered to match the file.
-- [ ] Modify the imported JSON to add or remove rules and variables, import again, and verify the popup reflects the new configuration.
+- [ ] Modify the imported JSON to add or remove rules and variables, import again, and verify the side panel reflects the new configuration.
 - [ ] Attempt to import blatantly invalid JSON (e.g. a text file); confirm that parsing failures are handled gracefully (e.g. console error, input reset) and the existing configuration is not silently corrupted.
 
 ### Feature: Local Storage Scope
@@ -291,7 +305,7 @@ Short description: Use `chrome.storage.local` to persist configs per browser pro
 
 - [ ] After saving custom rules/vars for a context, restart the browser and revisit the same URL; verify that the configuration is restored from local storage.
 - [ ] In DevTools → Application → Extension storage, confirm each context appears under its own `contextEntry:<id>` key plus a `contextEntryIds` index (not a single large `contextEntries` blob).
-- [ ] Import or save **5 or more** distinct context configurations, close and reopen the popup, and verify all contexts persist (regression for the former sync 8 KB per-item limit).
+- [ ] Import or save **5 or more** distinct context configurations, close and reopen the side panel, and verify all contexts persist (regression for the former sync 8 KB per-item limit).
 
 ### Feature: Storage Save Error Handling
 
@@ -309,7 +323,7 @@ Use this checklist when making changes to core form‑filling logic in `content.
 - [ ] Delayed/staggered filling:
   - [ ] All previously supported field types still end up filled correctly despite per‑field delays.
   - [ ] SPA/validation flows that depend on field events continue to work and do not show persistent errors after a fill.
-  - [ ] Popup and injected button remain responsive and show accurate final **Filled/Skipped/Total** counts.
+  - [ ] Side panel and injected button remain responsive and show accurate final **Filled/Skipped/Total** counts.
 - [ ] Two‑pass custom selector fill:
   - [ ] First pass still fills all straightforward, reachable custom selector targets.
   - [ ] Second pass reliably retries only initially empty fields that remain present and can now be filled.
@@ -317,9 +331,9 @@ Use this checklist when making changes to core form‑filling logic in `content.
 
 ## Tester Rules
 
-- **Keep coverage aligned with code and UI**: When features or flows change in `popup.html`, `popup.js`, `content.js`, or `manifest.json`, update or add the corresponding feature sections and checklists in this document.
+- **Keep coverage aligned with code and UI**: When features or flows change in `popup.html`, `sidepanel.html`, `app-core.js`, `content.js`, or `manifest.json`, update or add the corresponding feature sections and checklists in this document.
 - **Update existing cases before adding new ones**: When users report confusion about a test, prefer clarifying or refining the existing checklist items instead of adding near‑duplicates.
 - **Mark uncertainty as `TBD`**: If expected behavior is unclear from the implementation or UX, annotate checklist items or notes with `TBD` rather than guessing; revisit and refine once behavior is confirmed.
-- **Group tests logically**: Add new features under the most relevant group (e.g. Popup tabs, Custom rules, Injected UI, Storage) and maintain concise, action‑oriented checklists.
+- **Group tests logically**: Add new features under the most relevant group (e.g. Side panel tabs, Custom rules, Injected UI, Storage) and maintain concise, action‑oriented checklists.
 - **Avoid implementation detail coupling**: Write tests in terms of user‑visible behavior (button labels, visible outcomes) rather than internal function names, so tests remain stable as code is refactored.
 

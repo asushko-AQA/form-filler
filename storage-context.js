@@ -1,4 +1,4 @@
-// Per-entry context storage in chrome.storage.local (shared by popup/content).
+// Per-entry context storage in chrome.storage.local (shared by side panel/content).
 (function attachStorageContext(globalObj) {
   const ENTRY_IDS_KEY = "contextEntryIds";
   const ENTRY_KEY_PREFIX = "contextEntry:";
@@ -131,6 +131,12 @@
   }
 
   const FLOATING_BTN_SETTINGS_KEY = "floatingButtonSettings";
+  const UI_MODE_KEY = "uiMode";
+  const UI_MODES = {
+    POPUP: "popup",
+    SIDE_PANEL: "sidepanel",
+  };
+  const DEFAULT_UI_MODE = UI_MODES.SIDE_PANEL;
 
   const FLOATING_BTN_CORNERS = [
     "bottom-right",
@@ -226,6 +232,34 @@
     }
   }
 
+  function normalizeUiMode(mode) {
+    return mode === UI_MODES.POPUP ? UI_MODES.POPUP : UI_MODES.SIDE_PANEL;
+  }
+
+  function getUiMode() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([UI_MODE_KEY], (res) => {
+        if (chrome.runtime.lastError) {
+          resolve(DEFAULT_UI_MODE);
+          return;
+        }
+        resolve(normalizeUiMode(res && res[UI_MODE_KEY]));
+      });
+    });
+  }
+
+  function setUiMode(mode, cb) {
+    const normalized = normalizeUiMode(mode);
+    chrome.storage.local.set({ [UI_MODE_KEY]: normalized }, () => {
+      if (typeof cb !== "function") return;
+      if (chrome.runtime.lastError) {
+        cb({ ok: false, error: storageErrorMessage(chrome.runtime.lastError) });
+        return;
+      }
+      cb({ ok: true, mode: normalized });
+    });
+  }
+
   globalObj.StorageContext = {
     getStorageContexts,
     setStorageContexts,
@@ -238,5 +272,10 @@
     setFloatingButtonSettings,
     getFloatingButtonCornerAxes,
     applyFloatingButtonPositionStyles,
+    UI_MODE_KEY,
+    UI_MODES,
+    DEFAULT_UI_MODE,
+    getUiMode,
+    setUiMode,
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);

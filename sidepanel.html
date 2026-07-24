@@ -23,14 +23,19 @@
       --radius: 10px;
     }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      width: 340px;
-      min-height: 200px;
-      max-height: 600px;
-      overflow-y: auto;
+      width: 100%;
+      min-height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       font-size: 13px;
     }
 
@@ -60,7 +65,15 @@
     }
     .logo svg { width: 16px; height: 16px; }
     .title { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
-    .subtitle { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 1px;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .badge {
       font-size: 9px; font-weight: 600;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -87,7 +100,13 @@
     .tab.active { color: var(--accent); border-color: var(--accent); }
 
     /* Content */
-    .panel { display: none; padding: 16px 18px; }
+    .panel {
+      display: none;
+      padding: 16px 18px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
     .panel.active { display: block; }
 
     /* Fill button */
@@ -158,7 +177,7 @@
       border-radius: var(--radius);
       overflow: hidden;
       margin-bottom: 14px;
-      max-height: 180px;
+      max-height: min(360px, 45vh);
       overflow-y: auto;
     }
     .field-item {
@@ -349,7 +368,7 @@
     </div>
     <div>
       <div class="title">AutoForm</div>
-      <div class="subtitle">smart form filler</div>
+      <div class="subtitle" id="active-tab-url" title="">Open a web page…</div>
     </div>
   </div>
   <span class="badge">v1.5.4</span>
@@ -500,25 +519,12 @@
 
   <button class="save-btn" id="save-custom-rules-btn">Save Custom Setup</button>
 
-  <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-    <button class="scan-btn" id="close-popup-btn" style="flex:0 0 auto; min-width:80px;">Close</button>
-  </div>
-
   <div style="display:flex; gap:8px; margin-top:10px;">
     <button class="scan-btn" id="export-config-btn" style="flex:1;">Download JSON</button>
     <button class="scan-btn" id="open-import-btn" style="flex:1;">Upload JSON</button>
   </div>
 
   <div class="saved-toast" id="saved-toast">✓ Saved successfully</div>
-
-  <div class="hint" id="close-confirm-panel" style="margin-top:10px; display:none;">
-    <div>Save changes before closing?</div>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button class="save-btn" id="close-confirm-save" style="flex:1;">Save &amp; Close</button>
-      <button class="scan-btn" id="close-confirm-discard" style="flex:1;">Leave without saving</button>
-      <button class="scan-btn" id="close-confirm-cancel" style="flex:1;">Cancel</button>
-    </div>
-  </div>
 
   <div class="hint" id="import-confirm-panel" style="margin-top:10px; display:none;">
     <div><strong>Import configuration</strong></div>
