@@ -130,9 +130,113 @@
     });
   }
 
+  const FLOATING_BTN_SETTINGS_KEY = "floatingButtonSettings";
+
+  const FLOATING_BTN_CORNERS = [
+    "bottom-right",
+    "bottom-left",
+    "top-right",
+    "top-left",
+  ];
+
+  const FLOATING_BTN_CORNER_AXES = {
+    "bottom-right": ["bottom", "right"],
+    "bottom-left": ["bottom", "left"],
+    "top-right": ["top", "right"],
+    "top-left": ["top", "left"],
+  };
+
+  const DEFAULT_FLOATING_BTN_SETTINGS = {
+    corner: "bottom-right",
+    gaps: { top: 24, bottom: 24, left: 24, right: 24 },
+  };
+
+  function normalizeGapPx(value, fallback) {
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n) || n < 0) return fallback;
+    return Math.min(n, 999);
+  }
+
+  function normalizeFloatingButtonSettings(raw) {
+    const src = raw && typeof raw === "object" ? raw : {};
+    const corner = FLOATING_BTN_CORNERS.includes(src.corner)
+      ? src.corner
+      : DEFAULT_FLOATING_BTN_SETTINGS.corner;
+    const gapsSrc = src.gaps && typeof src.gaps === "object" ? src.gaps : {};
+    return {
+      corner,
+      gaps: {
+        top: normalizeGapPx(gapsSrc.top, DEFAULT_FLOATING_BTN_SETTINGS.gaps.top),
+        bottom: normalizeGapPx(gapsSrc.bottom, DEFAULT_FLOATING_BTN_SETTINGS.gaps.bottom),
+        left: normalizeGapPx(gapsSrc.left, DEFAULT_FLOATING_BTN_SETTINGS.gaps.left),
+        right: normalizeGapPx(gapsSrc.right, DEFAULT_FLOATING_BTN_SETTINGS.gaps.right),
+      },
+    };
+  }
+
+  function getFloatingButtonSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([FLOATING_BTN_SETTINGS_KEY], (res) => {
+        if (chrome.runtime.lastError) {
+          resolve(normalizeFloatingButtonSettings(null));
+          return;
+        }
+        resolve(normalizeFloatingButtonSettings(res && res[FLOATING_BTN_SETTINGS_KEY]));
+      });
+    });
+  }
+
+  function setFloatingButtonSettings(settings, cb) {
+    const normalized = normalizeFloatingButtonSettings(settings);
+    chrome.storage.local.set({ [FLOATING_BTN_SETTINGS_KEY]: normalized }, () => {
+      if (typeof cb !== "function") return;
+      if (chrome.runtime.lastError) {
+        cb({ ok: false, error: storageErrorMessage(chrome.runtime.lastError) });
+        return;
+      }
+      cb({ ok: true, settings: normalized });
+    });
+  }
+
+  function getFloatingButtonCornerAxes(corner) {
+    return FLOATING_BTN_CORNER_AXES[corner] || FLOATING_BTN_CORNER_AXES["bottom-right"];
+  }
+
+  function applyFloatingButtonPositionStyles(element, settings) {
+    if (!element) return;
+    const normalized = normalizeFloatingButtonSettings(settings);
+    const { corner, gaps } = normalized;
+    element.style.top = "";
+    element.style.bottom = "";
+    element.style.left = "";
+    element.style.right = "";
+
+    if (corner === "bottom-right") {
+      element.style.bottom = `${gaps.bottom}px`;
+      element.style.right = `${gaps.right}px`;
+    } else if (corner === "bottom-left") {
+      element.style.bottom = `${gaps.bottom}px`;
+      element.style.left = `${gaps.left}px`;
+    } else if (corner === "top-right") {
+      element.style.top = `${gaps.top}px`;
+      element.style.right = `${gaps.right}px`;
+    } else if (corner === "top-left") {
+      element.style.top = `${gaps.top}px`;
+      element.style.left = `${gaps.left}px`;
+    }
+  }
+
   globalObj.StorageContext = {
     getStorageContexts,
     setStorageContexts,
     removeStorageContext,
+    FLOATING_BTN_SETTINGS_KEY,
+    FLOATING_BTN_CORNERS,
+    DEFAULT_FLOATING_BTN_SETTINGS,
+    normalizeFloatingButtonSettings,
+    getFloatingButtonSettings,
+    setFloatingButtonSettings,
+    getFloatingButtonCornerAxes,
+    applyFloatingButtonPositionStyles,
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);

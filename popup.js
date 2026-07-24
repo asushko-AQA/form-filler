@@ -992,6 +992,81 @@ document.getElementById("popup-fill-btn").addEventListener("click", async () => 
     Fill Form Now`;
 });
 
+// ── Floating button position settings ─────────
+
+const floatingBtnCornerSelect = document.getElementById("floating-btn-corner");
+const floatingGapInputs = {
+  top: document.getElementById("floating-gap-top"),
+  bottom: document.getElementById("floating-gap-bottom"),
+  left: document.getElementById("floating-gap-left"),
+  right: document.getElementById("floating-gap-right"),
+};
+const floatingGapWraps = {
+  top: document.getElementById("floating-gap-top-wrap"),
+  bottom: document.getElementById("floating-gap-bottom-wrap"),
+  left: document.getElementById("floating-gap-left-wrap"),
+  right: document.getElementById("floating-gap-right-wrap"),
+};
+
+function readFloatingButtonSettingsFromForm() {
+  const corner = floatingBtnCornerSelect
+    ? floatingBtnCornerSelect.value
+    : StorageContext.DEFAULT_FLOATING_BTN_SETTINGS.corner;
+  return StorageContext.normalizeFloatingButtonSettings({
+    corner,
+    gaps: {
+      top: floatingGapInputs.top ? floatingGapInputs.top.value : undefined,
+      bottom: floatingGapInputs.bottom ? floatingGapInputs.bottom.value : undefined,
+      left: floatingGapInputs.left ? floatingGapInputs.left.value : undefined,
+      right: floatingGapInputs.right ? floatingGapInputs.right.value : undefined,
+    },
+  });
+}
+
+function updateFloatingGapFieldVisibility(corner) {
+  const axes = StorageContext.getFloatingButtonCornerAxes(corner);
+  Object.keys(floatingGapWraps).forEach((axis) => {
+    const wrap = floatingGapWraps[axis];
+    if (wrap) wrap.style.display = axes.includes(axis) ? "block" : "none";
+  });
+}
+
+function applyFloatingButtonSettingsToForm(settings) {
+  const normalized = StorageContext.normalizeFloatingButtonSettings(settings);
+  if (floatingBtnCornerSelect) floatingBtnCornerSelect.value = normalized.corner;
+  if (floatingGapInputs.top) floatingGapInputs.top.value = String(normalized.gaps.top);
+  if (floatingGapInputs.bottom) floatingGapInputs.bottom.value = String(normalized.gaps.bottom);
+  if (floatingGapInputs.left) floatingGapInputs.left.value = String(normalized.gaps.left);
+  if (floatingGapInputs.right) floatingGapInputs.right.value = String(normalized.gaps.right);
+  updateFloatingGapFieldVisibility(normalized.corner);
+}
+
+function persistFloatingButtonSettingsFromForm() {
+  const settings = readFloatingButtonSettingsFromForm();
+  StorageContext.setFloatingButtonSettings(settings, (result) => {
+    if (result && result.ok && result.settings) {
+      applyFloatingButtonSettingsToForm(result.settings);
+    }
+  });
+}
+
+if (floatingBtnCornerSelect) {
+  StorageContext.getFloatingButtonSettings().then((settings) => {
+    applyFloatingButtonSettingsToForm(settings);
+  });
+
+  floatingBtnCornerSelect.addEventListener("change", () => {
+    updateFloatingGapFieldVisibility(floatingBtnCornerSelect.value);
+    persistFloatingButtonSettingsFromForm();
+  });
+
+  Object.values(floatingGapInputs).forEach((input) => {
+    if (!input) return;
+    input.addEventListener("change", persistFloatingButtonSettingsFromForm);
+    input.addEventListener("blur", persistFloatingButtonSettingsFromForm);
+  });
+}
+
 // ── Scan button (Fields tab advanced search) ──
 
 let lastLinkedRuleRow = null;

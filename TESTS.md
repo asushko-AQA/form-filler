@@ -26,7 +26,7 @@ Short description: Trigger a fill run for the active tab using the popup `Fill F
 
 Short description: The Fill tab hints that a floating Auto Fill button may be injected on the page.
 
-- [ ] Open the popup on a page where custom selectors are configured (see Custom Rules feature) and confirm the hint text mentions the floating Auto Fill button in the bottom‑right corner.
+- [ ] Open the popup on a page where custom selectors are configured (see Custom Rules feature) and confirm the hint text mentions the configurable floating **Auto Fill** button and corner/gap controls on the Fill tab.
 - [ ] On a fresh install or a page where no context config exists, confirm the hint text is still present and does not contradict actual behavior (mark specifics as **TBD** during first test run).
 
 ## Popup – Fields Tab
@@ -167,7 +167,10 @@ Short description: Under safe conditions, leaving the Custom tab triggers an aut
 
 Short description: Inject a floating Auto Fill button on pages that have context configurations and a ready DOM.
 
-- [ ] On a page where custom context configuration exists (custom selectors and/or vars), reload the page and verify that a floating **Auto Fill** button appears in the bottom‑right corner.
+- [ ] On a page where custom context configuration exists (custom selectors and/or vars), reload the page and verify that a floating **Auto Fill** button appears in the bottom‑right corner by default.
+- [ ] In the popup **Fill** tab, change the floating button corner (e.g. to bottom-left) and confirm the on-page button moves to that corner without a full reload when it is already visible.
+- [ ] With **bottom-right** selected, confirm only **Bottom gap** and **Right gap** inputs are shown; adjust them (e.g. bottom 48, right 12) and verify the button respects those offsets from the viewport edges.
+- [ ] Switch to **top-left** and confirm only **Top gap** and **Left gap** inputs appear; previous gap values for other sides are preserved when switching corners back.
 - [ ] Confirm the button styling is modern (gradient, rounded) and remains visible above page content due to a high `z-index`.
 - [ ] Interact with typical page elements (scrolling, hovering) and verify the button remains visible and responsive.
 - [ ] On a page where no context configuration exists, reload and confirm that **no** floating Auto Fill button is injected.

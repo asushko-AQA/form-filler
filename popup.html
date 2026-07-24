@@ -296,7 +296,7 @@
       <div class="subtitle">smart form filler</div>
     </div>
   </div>
-  <span class="badge">v1.3.1</span>
+  <span class="badge">v1.3.2</span>
 </div>
 
 <div class="tabs">
@@ -329,8 +329,37 @@
     </div>
   </div>
 
+  <div class="section-title" style="margin-bottom:8px">Floating button</div>
+  <div class="config-group">
+    <div class="config-label">Corner</div>
+    <select id="floating-btn-corner" class="config-input">
+      <option value="bottom-right">Bottom right</option>
+      <option value="bottom-left">Bottom left</option>
+      <option value="top-right">Top right</option>
+      <option value="top-left">Top left</option>
+    </select>
+  </div>
+  <div id="floating-btn-gaps" style="display:flex; gap:8px; margin-bottom:14px;">
+    <div class="config-group floating-gap-field" id="floating-gap-top-wrap" data-gap="top" style="flex:1; display:none;">
+      <div class="config-label">Top gap (px)</div>
+      <input type="number" id="floating-gap-top" class="config-input" min="0" max="999" step="1" value="24" />
+    </div>
+    <div class="config-group floating-gap-field" id="floating-gap-bottom-wrap" data-gap="bottom" style="flex:1;">
+      <div class="config-label">Bottom gap (px)</div>
+      <input type="number" id="floating-gap-bottom" class="config-input" min="0" max="999" step="1" value="24" />
+    </div>
+    <div class="config-group floating-gap-field" id="floating-gap-left-wrap" data-gap="left" style="flex:1; display:none;">
+      <div class="config-label">Left gap (px)</div>
+      <input type="number" id="floating-gap-left" class="config-input" min="0" max="999" step="1" value="24" />
+    </div>
+    <div class="config-group floating-gap-field" id="floating-gap-right-wrap" data-gap="right" style="flex:1;">
+      <div class="config-label">Right gap (px)</div>
+      <input type="number" id="floating-gap-right" class="config-input" min="0" max="999" step="1" value="24" />
+    </div>
+  </div>
+
   <div class="hint" id="hint-fill-entrypoint">
-    💡 An <strong>Auto Fill</strong> button is also injected directly on the page — look for the floating button in the bottom-right corner.
+    💡 An <strong>Auto Fill</strong> button is also injected directly on the page. Choose its corner and edge gaps below; changes apply on the next page load or immediately if the button is already visible.
   </div>
 </div>
 

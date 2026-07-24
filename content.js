@@ -473,15 +473,13 @@ async function fillForm(_overrides = {}) {
 
 // ── Injected UI button ────────────────────────
 
-function injectButton() {
+function injectButton(settings) {
   if (document.getElementById("autoform-btn-wrap")) return;
 
   const wrap = document.createElement("div");
   wrap.id = "autoform-btn-wrap";
   wrap.style.cssText = `
     position: fixed;
-    bottom: 24px;
-    right: 24px;
     z-index: 2147483647;
     display: flex;
     flex-direction: column;
@@ -489,6 +487,7 @@ function injectButton() {
     gap: 8px;
     font-family: 'Segoe UI', system-ui, sans-serif;
   `;
+  StorageContext.applyFloatingButtonPositionStyles(wrap, settings);
 
   // Toast element
   const toast = document.createElement("div");
@@ -601,13 +600,17 @@ function waitForBody() {
   if (document.body) {
     StorageContext.getStorageContexts().then((entries) => {
       if (shouldShowInjectedButton(entries)) {
-        injectButton();
+        StorageContext.getFloatingButtonSettings().then((settings) => {
+          injectButton(settings);
+        });
         // Re-check on SPA navigation
         const obs = new MutationObserver(() => {
           if (!document.getElementById("autoform-btn-wrap")) {
             StorageContext.getStorageContexts().then((entries2) => {
               if (shouldShowInjectedButton(entries2)) {
-                injectButton();
+                StorageContext.getFloatingButtonSettings().then((settings) => {
+                  injectButton(settings);
+                });
               }
             });
           }
@@ -621,6 +624,17 @@ function waitForBody() {
 }
 
 waitForBody();
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (!changes[StorageContext.FLOATING_BTN_SETTINGS_KEY]) return;
+  const wrap = document.getElementById("autoform-btn-wrap");
+  if (!wrap) return;
+  StorageContext.applyFloatingButtonPositionStyles(
+    wrap,
+    changes[StorageContext.FLOATING_BTN_SETTINGS_KEY].newValue
+  );
+});
 
 function escapeCssAttrValue(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
