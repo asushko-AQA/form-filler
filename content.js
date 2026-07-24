@@ -640,7 +640,7 @@ function escapeCssAttrValue(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-// ── Message bridge (from popup) ───────────────
+// ── Message bridge (from side panel) ───────────────
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === "fill") {
@@ -657,6 +657,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
       sendResponse({ filled, skipped, total });
     })();
+    return true;
   }
   if (msg.action === "verifySelector") {
     const selector = msg.selector;

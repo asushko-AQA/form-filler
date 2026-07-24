@@ -1,4 +1,4 @@
-// Shared context URL matching + storage helpers for popup/content.
+// Shared context URL matching + storage helpers for side panel/content.
 (function attachContextMatcher(globalObj) {
   const MATCH_MODE = {
     EXACT: "exact",
@@ -169,11 +169,13 @@
     return Object.values(dedupByModePattern);
   }
 
-  function pickBestContextEntry(entries, url) {
-    const matches = (Array.isArray(entries) ? entries : []).filter((entry) =>
-      isMatch(url, entry.pattern, entry.matchMode)
-    );
-    if (!matches.length) return null;
+  function hostnameFromTarget(target) {
+    if (!target) return "";
+    const slash = target.indexOf("/");
+    return slash < 0 ? target : target.slice(0, slash);
+  }
+
+  function rankContextMatches(matches) {
     matches.sort((a, b) => {
       const pDiff = (MODE_PRIORITY[b.matchMode] || 0) - (MODE_PRIORITY[a.matchMode] || 0);
       if (pDiff !== 0) return pDiff;
@@ -182,6 +184,26 @@
       return (b.updatedAt || 0) - (a.updatedAt || 0);
     });
     return matches[0];
+  }
+
+  function pickBestContextEntry(entries, url) {
+    const list = Array.isArray(entries) ? entries : [];
+    const matches = list.filter((entry) => isMatch(url, entry.pattern, entry.matchMode));
+    if (matches.length) return rankContextMatches(matches);
+
+    // Same-hostname fallback: one config per site often covers multiple paths
+    // (e.g. /portal vs /external/* on the same host).
+    const cUrl = canonicalUrl(url);
+    const target = cUrl.replace(/^[a-z]+:\/\//i, "");
+    const urlHost = hostnameFromTarget(target);
+    if (!urlHost) return null;
+
+    const hostMatches = list.filter((entry) => {
+      const patternHost = hostnameFromTarget(canonicalPattern(entry.pattern || ""));
+      return patternHost && patternHost === urlHost;
+    });
+    if (!hostMatches.length) return null;
+    return rankContextMatches(hostMatches);
   }
 
   function saveContextEntry(entries, newEntry) {
