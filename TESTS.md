@@ -188,6 +188,7 @@ Short description: Inject a floating Auto Fill button on pages that have context
 - [ ] Confirm the button styling is modern (gradient, rounded) and remains visible above page content due to a high `z-index`.
 - [ ] Interact with typical page elements (scrolling, hovering) and verify the button remains visible and responsive.
 - [ ] On a page where no context configuration exists, reload and confirm that **no** floating Auto Fill button is injected.
+- [ ] With pattern `host/external/` (**Exact**) or `host/external/*` (**Wildcard**), open a different path on the same host (e.g. `host/portal/wallets`) and confirm **no** floating button is injected and the side panel loads an empty/new context for that URL.
 
 ### Feature: Auto Fill Button Click Behavior
 
