@@ -8,6 +8,28 @@ with goals, changes, risks, and a release checklist.
 > This `Plans.md` file is the long-lived, versioned source of truth for
 > iteration planning.
 
+## Version 1.5.5 — Strict context matching (remove hostname fallback)
+
+**Branch:** `feature/side-panel-ui`
+
+### Goals
+
+- Honor **Context URL pattern** + match mode for button visibility and rule loading.
+- Stop applying `/external/` configs on unrelated same-host paths like `/portal/wallets`.
+
+### Shipped
+
+- Removed same-hostname fallback from `pickBestContextEntry` in `context-matcher.js`.
+
+### Testing & Risk
+
+- Users who relied on 1.4.1 hostname fallback must use **Prefix**, **Wildcard**, or a separate context entry per path.
+
+### Release Checklist
+
+- [x] Version **1.5.5**; CHANGELOG and TESTS updated.
+- [ ] Reload extension; confirm no **Auto Fill** button on `/portal/wallets` when pattern is `/external/`.
+
 ## Version 1.5.4 — Fill message handler fix
 
 **Branch:** `feature/side-panel-ui`
@@ -124,6 +146,8 @@ with goals, changes, risks, and a release checklist.
 ### Shipped
 
 - `context-matcher.js` — hostname-level fallback when no exact/prefix/wildcard match (e.g. `/portal` loads config saved for `host/external/*`).
+
+**Note (1.5.5):** Hostname fallback was removed; patterns must match explicitly.
 - Restores rules and variables in the side panel and for the floating fill button on sibling paths.
 
 ### Testing & Risk

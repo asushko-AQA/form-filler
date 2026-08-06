@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased 1.x.x] — started 2026-03-09
 
+## 1.5.5 — 2026-08-06
+
+- Removed same-hostname context fallback so the floating **Auto Fill** button, side panel rules, and fill actions only apply when the current URL actually matches the saved **Context URL pattern** and match mode (Exact, Prefix, or Wildcard). Fixes the button appearing on unrelated paths such as `/portal/wallets` when the pattern targets `/external/`.
+
 ## 1.5.4 — 2026-07-24
 
 - Fixed **Fill Form Now** (side panel / popup) showing `!` / `?` stats instead of fill counts by returning `true` from the content script async `fill` message handler so `sendResponse` completes reliably.
