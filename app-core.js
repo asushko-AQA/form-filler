@@ -1921,9 +1921,15 @@ function showImportJsonError(message) {
   errorEl.style.display = "block";
 }
 
+const IMPORT_JSON_MAX_BYTES = 1024 * 1024;
+let importJsonSourceLabel = "";
+
 function hideImportConfirmPanel() {
   const panel = document.getElementById("import-confirm-panel");
-  if (panel) panel.style.display = "none";
+  if (panel) {
+    panel.style.display = "none";
+    panel.classList.remove("is-dragover");
+  }
   showImportPatternError("");
   showImportJsonError("");
 }
@@ -1931,15 +1937,28 @@ function hideImportConfirmPanel() {
 function resetImportInputs() {
   const jsonInput = document.getElementById("import-json-input");
   if (jsonInput) jsonInput.value = "";
+  const fileInput = document.getElementById("import-json-file");
+  if (fileInput) fileInput.value = "";
+  importJsonSourceLabel = "";
   showImportJsonError("");
+  syncImportJsonFileButton();
 }
 
-function updateImportSourceCaptionFromJson(text) {
+function syncImportJsonFileButton() {
+  const field = document.querySelector("#import-confirm-panel .import-json-field");
+  const jsonInput = document.getElementById("import-json-input");
+  if (!field) return;
+  const hasJson = !!(jsonInput && jsonInput.value.trim());
+  field.classList.toggle("has-json", hasJson);
+}
+
+function updateImportSourceCaptionFromJson(text, sourceLabel) {
   const caption = document.getElementById("import-source-caption");
   if (!caption) return;
   const trimmed = (text || "").trim();
+  const label = sourceLabel || importJsonSourceLabel;
   if (!trimmed) {
-    caption.textContent = "Paste JSON from a downloaded config file.";
+    caption.textContent = "Choose a JSON file or paste JSON from a downloaded config.";
     return;
   }
   try {
@@ -1952,11 +1971,72 @@ function updateImportSourceCaptionFromJson(text) {
       typeof json.matchMode === "string" && json.matchMode
         ? json.matchMode
         : ContextMatcher.MATCH_MODE.EXACT;
-    caption.textContent = `From pasted JSON: ${pattern} (${matchMode})`;
+    const prefix = label ? `From ${label}` : "From pasted JSON";
+    caption.textContent = `${prefix}: ${pattern} (${matchMode})`;
     showImportJsonError("");
   } catch (_e) {
-    caption.textContent = "Paste JSON from a downloaded config file.";
+    caption.textContent = label
+      ? `From ${label}: JSON is invalid.`
+      : "Choose a JSON file or paste JSON from a downloaded config.";
   }
+}
+
+function applyPatternFromImportedJson(text) {
+  const patternInput = document.getElementById("import-pattern-input");
+  const matchModeInput = document.getElementById("import-match-mode");
+  if (!patternInput || !matchModeInput) return;
+  try {
+    const json = JSON.parse((text || "").trim());
+    if (typeof json.pattern === "string" && json.pattern.trim()) {
+      patternInput.value = json.pattern.trim();
+      autoSizeImportPatternInput();
+    }
+    if (typeof json.matchMode === "string" && json.matchMode) {
+      const hasOption = Array.from(matchModeInput.options).some(
+        (option) => option.value === json.matchMode
+      );
+      if (hasOption) matchModeInput.value = json.matchMode;
+    }
+    const validation = ContextMatcher.validateContextPattern(
+      patternInput.value.trim(),
+      matchModeInput.value
+    );
+    showImportPatternError(validation.ok ? "" : validation.message);
+  } catch (_e) {
+    // Invalid JSON is reported by parseImportJsonText / caption.
+  }
+}
+
+function applyImportedJsonText(text, sourceLabel) {
+  const jsonInput = document.getElementById("import-json-input");
+  importJsonSourceLabel = sourceLabel || "";
+  if (jsonInput) jsonInput.value = text || "";
+  syncImportJsonFileButton();
+  updateImportSourceCaptionFromJson(text, sourceLabel);
+  const parsed = parseImportJsonText(text);
+  if (!parsed.ok) {
+    showImportJsonError(parsed.message);
+    return;
+  }
+  showImportJsonError("");
+  applyPatternFromImportedJson(text);
+}
+
+function readImportJsonFile(file) {
+  if (!file) return;
+  if (file.size > IMPORT_JSON_MAX_BYTES) {
+    showImportJsonError("JSON file is too large (max 1 MB).");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = typeof reader.result === "string" ? reader.result : "";
+    applyImportedJsonText(text, file.name || "file");
+  };
+  reader.onerror = () => {
+    showImportJsonError("Could not read the selected file.");
+  };
+  reader.readAsText(file);
 }
 
 function openImportConfirmPanel() {
@@ -1965,6 +2045,7 @@ function openImportConfirmPanel() {
   const patternInput = document.getElementById("import-pattern-input");
   const matchModeInput = document.getElementById("import-match-mode");
   const jsonInput = document.getElementById("import-json-input");
+  const popupHint = document.getElementById("import-file-popup-hint");
   if (!panel || !patternInput || !matchModeInput) return;
 
   const defaultPattern = ContextMatcher.canonicalPattern(activeTabUrl);
@@ -1972,7 +2053,10 @@ function openImportConfirmPanel() {
 
   resetImportInputs();
   if (caption) {
-    caption.textContent = "Paste JSON from a downloaded config file.";
+    caption.textContent = "Choose a JSON file or paste JSON from a downloaded config.";
+  }
+  if (popupHint) {
+    popupHint.style.display = isPopupUi ? "block" : "none";
   }
 
   patternInput.value = defaultPattern || "";
@@ -1994,7 +2078,7 @@ function openImportConfirmPanel() {
 function parseImportJsonText(text) {
   const trimmed = (text || "").trim();
   if (!trimmed) {
-    return { ok: false, message: "Paste JSON configuration text first." };
+    return { ok: false, message: "Choose a JSON file or paste JSON configuration text first." };
   }
   try {
     const json = JSON.parse(trimmed);
@@ -2004,7 +2088,7 @@ function parseImportJsonText(text) {
       customVars: Array.isArray(json.customVars) ? json.customVars : [],
     };
   } catch (err) {
-    return { ok: false, message: "Invalid JSON. Check the pasted text and try again." };
+    return { ok: false, message: "Invalid JSON. Check the file or pasted text and try again." };
   }
 }
 
@@ -2097,10 +2181,45 @@ document.getElementById("import-cancel-btn").addEventListener("click", () => {
 const importJsonInput = document.getElementById("import-json-input");
 const importPatternInput = document.getElementById("import-pattern-input");
 const importMatchModeInput = document.getElementById("import-match-mode");
+const importFileInput = document.getElementById("import-json-file");
+const importFileBtn = document.getElementById("import-json-file-btn");
+const importConfirmPanel = document.getElementById("import-confirm-panel");
 
 if (importJsonInput) {
   importJsonInput.addEventListener("input", () => {
+    importJsonSourceLabel = "";
+    if (importFileInput) importFileInput.value = "";
+    syncImportJsonFileButton();
     updateImportSourceCaptionFromJson(importJsonInput.value);
+  });
+}
+
+if (importFileBtn && importFileInput) {
+  importFileBtn.addEventListener("click", () => {
+    importFileInput.click();
+  });
+  importFileInput.addEventListener("change", () => {
+    const file = importFileInput.files && importFileInput.files[0];
+    readImportJsonFile(file);
+  });
+}
+
+if (importConfirmPanel) {
+  importConfirmPanel.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer || !Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    importConfirmPanel.classList.add("is-dragover");
+  });
+  importConfirmPanel.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget && importConfirmPanel.contains(event.relatedTarget)) return;
+    importConfirmPanel.classList.remove("is-dragover");
+  });
+  importConfirmPanel.addEventListener("drop", (event) => {
+    event.preventDefault();
+    importConfirmPanel.classList.remove("is-dragover");
+    const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+    if (file) readImportJsonFile(file);
   });
 }
 

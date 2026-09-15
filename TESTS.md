@@ -294,11 +294,15 @@ Short description: Download a JSON file containing custom selectors and variable
 
 ### Feature: Import Context Configuration from JSON
 
-Short description: Upload a JSON file to replace the current context’s custom selectors and variables.
+Short description: Import custom selectors and variables from a JSON file or pasted JSON text.
 
-- [ ] Start from a clean state, click **Upload JSON**, select a previously exported `autoform-config.json`, and confirm that rules and variables are rendered to match the file.
+- [ ] Start from a clean state, click **Upload JSON**, confirm an upload icon sits inside the JSON field (bottom-right), hover it to see the **Choose JSON file** tooltip, then choose a previously exported `autoform-config.json`. Confirm the textarea fills, the icon hides, and pattern / match mode are prefilled from the file.
+- [ ] Paste JSON into the empty field (without using the upload icon) and confirm the icon disappears; clear the field and confirm the icon returns.
+- [ ] Click **Import** and confirm that rules and variables are rendered to match the file.
+- [ ] Drag and drop an exported `autoform-config.json` onto the import panel (without using the file picker) and confirm the same preview and import behavior.
+- [ ] Paste exported JSON into the textarea instead of choosing a file, click **Import**, and confirm rules and variables still apply.
 - [ ] Modify the imported JSON to add or remove rules and variables, import again, and verify the side panel reflects the new configuration.
-- [ ] Attempt to import blatantly invalid JSON (e.g. a text file); confirm that parsing failures are handled gracefully (e.g. console error, input reset) and the existing configuration is not silently corrupted.
+- [ ] Attempt to import blatantly invalid JSON (e.g. a text file via the upload icon or paste); confirm that parsing failures are shown in the import panel and the existing configuration is not silently corrupted.
 
 ### Feature: Local Storage Scope
 
