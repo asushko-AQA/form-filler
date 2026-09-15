@@ -253,6 +253,74 @@
       min-height: 36px;
       box-sizing: border-box;
     }
+    #import-confirm-panel .import-json-field {
+      position: relative;
+      margin-top: 4px;
+    }
+    #import-confirm-panel .import-json-field #import-json-input {
+      margin-top: 0;
+      min-height: 80px;
+      max-height: 160px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 11px;
+      padding-right: 12px;
+      padding-bottom: 34px;
+    }
+    #import-confirm-panel .import-json-field #import-json-file-btn {
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      min-height: 28px;
+      padding: 0;
+      margin-bottom: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #import-confirm-panel .import-json-field #import-json-file-btn svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+    #import-confirm-panel .import-json-field #import-json-file-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 6px);
+      padding: 4px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.3;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+      z-index: 2;
+    }
+    #import-confirm-panel .import-json-field #import-json-file-btn:hover::after,
+    #import-confirm-panel .import-json-field #import-json-file-btn:focus-visible::after {
+      opacity: 1;
+    }
+    #import-confirm-panel .import-json-field.has-json #import-json-file-btn {
+      display: none;
+    }
+    #import-confirm-panel.is-dragover {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.08);
+    }
+    #import-file-popup-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.85;
+    }
 
     .save-btn {
       width: 100%; padding: 9px;
@@ -352,7 +420,7 @@
       <div class="subtitle">smart form filler</div>
     </div>
   </div>
-  <span class="badge">v1.5.5</span>
+  <span class="badge">v1.5.6</span>
 </div>
 
 <div class="tabs">
@@ -522,8 +590,19 @@
 
   <div class="hint" id="import-confirm-panel" style="margin-top:10px; display:none;">
     <div><strong>Import configuration</strong></div>
-    <div style="margin-top:8px; font-size:11px;">Paste exported JSON below:</div>
-    <textarea id="import-json-input" class="config-input" placeholder='{"pattern":"...","matchMode":"exact","customSelectors":[],"customVars":[]}' style="margin-top:4px; min-height:80px; max-height:160px; resize:vertical; font-family:monospace; font-size:11px;"></textarea>
+    <div style="margin-top:8px; font-size:11px;">Paste exported JSON or choose a file:</div>
+    <div id="import-file-popup-hint" style="display:none;">On Linux, the file picker can close this popup. Drop a file here, paste JSON, or use Side panel mode.</div>
+    <div class="import-json-field">
+      <input type="file" id="import-json-file" accept=".json,application/json,text/json" hidden />
+      <textarea id="import-json-input" class="config-input" placeholder='{"pattern":"...","matchMode":"exact","customSelectors":[],"customVars":[]}'></textarea>
+      <button type="button" class="scan-btn" id="import-json-file-btn" data-tooltip="Choose JSON file" aria-label="Choose JSON file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
+    </div>
     <div id="import-json-error" style="margin-top:4px;font-size:11px;color:#f97373;display:none;"></div>
     <div id="import-source-caption" style="margin-top:6px; font-size:11px; opacity:0.85;"></div>
     <div style="margin-top:8px; font-size:11px;">Context URL pattern for this import:</div>

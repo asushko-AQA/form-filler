@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased 1.x.x] — started 2026-03-09
 
+## 1.5.6 — 2026-09-15
+
+- Import configuration accepts a JSON file (upload icon inside the JSON field, or drag-and-drop) in addition to pasting JSON text. The in-field icon hides once JSON is pasted or loaded; hover shows a **Choose JSON file** tooltip. Pattern and match mode are prefilled from the file when present.
+
 ## 1.5.5 — 2026-08-06
 
 - Removed same-hostname context fallback so the floating **Auto Fill** button, side panel rules, and fill actions only apply when the current URL actually matches the saved **Context URL pattern** and match mode (Exact, Prefix, or Wildcard). Fixes the button appearing on unrelated paths such as `/portal/wallets` when the pattern targets `/external/`.
